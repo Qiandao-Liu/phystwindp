@@ -1,0 +1,32 @@
+# diffusion_policy_3d/config/task/deformable_cloth.yaml
+
+name: deformable_cloth
+
+shape_meta: &shape_meta
+  obs:
+    point_cloud:
+      shape: [1024, 6]
+      type: point_cloud
+    agent_pos:
+      shape: [90]
+      type: low_dim
+  action:
+    shape: [90]
+
+env_runner:
+  _target_: diffusion_policy_3d.env_runner.deformable_cloth_runner.DeformableClothRunner
+  case_name: double_lift_cloth_1
+  eval_episodes: 5
+  max_steps: 100
+  fps: 10
+  render_size: 84
+
+dataset:
+  _target_: diffusion_policy_3d.dataset.deformable_cloth_dataset.DeformableClothDataset
+  zarr_path: ${oc.env:HOME}/workspace/PhysTwin/dp3_data/cloth_aloha_dataset.zarr
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  seed: 42
+  val_ratio: 0.02
+
