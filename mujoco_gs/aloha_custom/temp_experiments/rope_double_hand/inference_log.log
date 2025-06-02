@@ -1,0 +1,5 @@
+2025-04-18 22:24:09,897 [   INFO] [DATA]: loading data from ~/workspace/PhysTwin/data/different_types/rope_double_hand/final_data.pkl
+2025-04-18 22:24:33,082 [   INFO] [DATA]: loading data from /home/qiandaoliu/workspace/PhysTwin/data/different_types/rope_double_hand/final_data.pkl
+2025-04-18 22:24:33,183 [   INFO] [SIMULATION]: Initialize the Spring-Mass System
+2025-04-18 22:24:33,432 [   INFO] Load model from /home/qiandaoliu/workspace/PhysTwin/experiments/rope_double_hand/train/best_199.pth
+2025-04-18 22:24:33,435 [   INFO] Party Time Start!!!!

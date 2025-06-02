@@ -1,0 +1,63 @@
+# generate_scene_with_rope_points.py
+import os
+
+def generate_scene_with_rope_points(
+    original_scene_path,
+    output_scene_path,
+    num_gs_points=1753,
+    num_ctrl_points=30,
+    gs_radius=0.005,
+    ctrl_radius=0.003,
+):
+    with open(original_scene_path, "r") as f:
+        xml_lines = f.readlines()
+
+    # Find the line index for </worldbody>
+    insert_index = None
+    for i, line in enumerate(xml_lines):
+        if "</worldbody>" in line:
+            insert_index = i
+            break
+
+    if insert_index is None:
+        raise RuntimeError("❌ Could not find </worldbody> in the original scene XML.")
+
+    new_lines = []
+
+    # Insert Gaussian Splatting points (each wrapped in <body>)
+    new_lines.append('    <!-- Gaussian Splatting points (as body-wrapped geom) -->\n')
+    for i in range(num_gs_points):
+        new_lines.append(f'    <body name="gs_{i:04d}_body" pos="0 0 0">\n')
+        new_lines.append(
+            f'      <geom name="gs_{i:04d}" type="sphere" size="{gs_radius}" '
+            f'rgba="1 0 0 1" contype="0" conaffinity="0"/>\n'
+        )
+        new_lines.append('    </body>\n')
+
+    # Insert Controller points
+    new_lines.append('    <!-- Controller points (as body-wrapped geom) -->\n')
+    for i in range(num_ctrl_points):
+        new_lines.append(f'    <body name="ctrl_{i:04d}_body" pos="0 0 0">\n')
+        new_lines.append(
+            f'      <geom name="ctrl_{i:04d}" type="sphere" size="{ctrl_radius}" '
+            f'rgba="0 1 0 1" contype="0" conaffinity="0"/>\n'
+        )
+        new_lines.append('    </body>\n')
+
+    # Inject before </worldbody>
+    new_xml = xml_lines[:insert_index] + new_lines + xml_lines[insert_index:]
+
+    # Save to new file
+    with open(output_scene_path, "w") as f:
+        f.writelines(new_xml)
+
+    print(f"✅ Wrote new scene with {num_gs_points + num_ctrl_points} rope bodies to: {output_scene_path}")
+
+
+if __name__ == "__main__":
+    generate_scene_with_rope_points(
+        original_scene_path="./../mujoco_gs/aloha_custom/scene.xml",
+        output_scene_path="./../mujoco_gs/aloha_custom/scene_with_rope.xml",
+        num_gs_points=1753,
+        num_ctrl_points=30
+    )

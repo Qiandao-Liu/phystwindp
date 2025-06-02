@@ -1,0 +1,33 @@
+# === 大型数据文件夹 ===
+PhysTwin/data/
+PhysTwin/dp3_data/
+PhysTwin/flash-attention/
+PhysTwin/gaussian_output/
+PhysTwin/mpc_init/
+PhysTwin/mpc_init_cloth/
+PhysTwin/mpc_init_rope/
+PhysTwin/mpc_replay/
+PhysTwin/experiments/
+PhysTwin/experiments_optimization/
+PhysTwin/fixed_traj/
+PhysTwin/replay_videos/
+
+3D-Diffusion-Policy/data/
+3D-Diffusion-Policy/mujoco210/
+3D-Diffusion-Policy/third_party/
+
+mujoco_gs/mujoco_menagerie/
+
+# === 临时文件 缓存 ===
+__pycache__/
+*.pyc
+*.pkl
+*.zarr
+*.npy
+*.ply
+*.mp4
+
+# === 编辑器 系统缓存 ===
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,19 @@
+[Controller Points Shape]: (30, 3)
+[Controller Points Sample (first 5)]:
+[[ 0.14835407  0.28410232 -0.17508908]
+ [ 0.16021267  0.2658383  -0.16222966]
+ [ 0.17673391  0.25689086 -0.1412159 ]
+ [ 0.18490565  0.2669312  -0.16744559]
+ [ 0.1720108   0.24165708 -0.11914343]]
+
+[Left Group Centroid]: [ 0.16288646 -0.08046629 -0.16048722]
+[Right Group Centroid]: [ 0.1581026   0.28277582 -0.14912002]
+[Left vs Right Group Size]: 15 vs 15
+
+[Default Control Step Size]: 0.005 (in each axis)
+
+[Structure Points Shape]: torch.Size([1753, 3])
+[Init Vertices Shape]: torch.Size([1783, 3])
+[Init Springs Shape]: torch.Size([13729, 2])
+[Init Rest Lengths Shape]: torch.Size([13729])
+[Num Object Springs]: 13117
