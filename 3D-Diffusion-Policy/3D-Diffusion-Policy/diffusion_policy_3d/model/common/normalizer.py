@@ -1,4 +1,3 @@
-# /workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/diffusion_policy_3d/model/common/normalizer.py
 from typing import Union, Dict
 
 import unittest
@@ -58,7 +57,6 @@ class LinearNormalizer(DictOfTensorMixin):
             for key, value in x.items():
                 params = self.params_dict[key]
                 result[key] = _normalize(value, params, forward=forward)
-                print(f"[DEBUG] Normalizing key={key}, x.shape={x[key].shape}, scale.shape={self.params_dict[key]['scale'].shape}")
             return result
         else:
             if '_default' not in self.params_dict:

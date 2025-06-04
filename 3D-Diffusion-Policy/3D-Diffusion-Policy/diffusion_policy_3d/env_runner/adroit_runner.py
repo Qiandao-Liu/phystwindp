@@ -1,4 +1,3 @@
-# workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/diffusion_policy_3d/env_runner/adroit_runner.py
 import wandb
 import numpy as np
 import torch

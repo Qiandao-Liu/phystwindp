@@ -33,6 +33,26 @@ This repository contains the official implementation of the **PhysTwin** framewo
 ### Update
 **This repository will be actively maintained by the authors, with continuous updates introducing new features to inspire further research.**
 
+- **[25.4.15] GPU Memory Optimization:** Thanks to user feedback and testing, we've further optimized the code to reduce GPU memory usage in the interactive playground—now requiring only about 2GB in total. Previously, LBS initialization consumed a significant amount of GPU memory; it's now offloaded to the CPU and only needs to run once at startup. Everything runs smoothly as a result.
+
+- **[25.4.8] Optmization Speed:** Regarding the questions on optimization speed, thanks to Nvidia Warp, our differentiable Spring-Mass simulator enables first-order optimization in approximately 5 minutes—and even faster with visualizations disabled—significantly outperforming prior work that typically requires hours. The zero-order, sampling-based optimization (CMA-ES) takes around 12 minutes, depending on the number of epochs. These statistics are based on the stuffed animal experiments without self-collision enabled.
+  
+- **[25.4.4] Material Visualization:** Show the experimental features to visualize the materials approximated from the underlying spring-mass model. (See below for detailed instructions)
+<p align="center">
+  <img src="./assets/material_rope.gif" width="30%">
+  <img src="./assets/material_cloth.gif" width="30%">
+  <img src="./assets/material_sloth.gif" width="30%">
+</p>
+
+
+- **[25.4.3] Multiple Objects Demos:** Show the experimental features for handling collisions among multiple PhysTwins we construct. (See below for detailed instructions)
+<p align="center">
+  <img src="./assets/rope_multiple.gif" width="45%">
+  <img src="./assets/sloth_multiple.gif" width="45%">
+</p>
+
+- **[25.4.3] LBS GPU Memory Fix:** Clear intermediate variables to significantly reduce GPU memory usage in the interactive playground. The sloth case now requires only about 4GB in total. (Pull the latest code to apply the fix.)
+
 - **[25.4.1] Force Visualization:** Visualize the forces applied to objects after optimization, aiding in force analysis from videos. (See below for detailed instructions)
 <p align="center">
   <img src="./assets/force_rope.gif" width="30%">
@@ -40,17 +60,12 @@ This repository contains the official implementation of the **PhysTwin** framewo
   <img src="./assets/force_sloth.gif" width="30%">
 </p>
 
-#### Upcoming Releases (Next Few Days)
-- **Material Visualization:** Visualize object materials post-optimization to facilitate material analysis from interactions.
-- **Material Transfer:** Provide a demo for transferring material properties from one PhysTwin to another object.
-- **Rigid Object Demo:** Demonstrate our framework on rigid object interactions, showcasing its capability for rigid object tracking from videos.
-- **Claw Machine:** Utilize our constructed PhysTwin to develop a claw machine demo, illustrating collision handling among multiple objects.
-
 #### Long-Term Plans
 - **Batch Inferencing Support:** Integrate batch inferencing into the underlying SpringMass code, enabling faster rollouts and efficient data generation.
 
 
 ### Setup
+#### 🐧Linux Setup
 ```
 # Here we use cuda-12.1
 export PATH={YOUR_DIR}/cuda/cuda-12.1/bin:$PATH
@@ -66,7 +81,20 @@ bash ./env_install/env_install.sh
 # Download the necessary pretrained models for data processing
 bash ./env_install/download_pretrained_models.sh
 ```
+
+#### 🪟Windows Setup
 Thanks to @GuangyanCai contributions, now we also have a windows setup codebase in `windows_setup` branch.
+
+#### 🐳Docker Setup
+Thanks to @epiception contributions, we now have Docker support as well.
+```
+export DOCKER_USERNAME="your_alias" # default is ${whoami} (optional)
+chmod +x ./docker_scripts/build.sh
+./docker_scripts/build.sh
+
+# The script accepts architecture version from https://developer.nvidia.com/cuda-gpus as an additional argument
+./docker_scripts/build.sh 8.9+PTX # For NVIDIA RTX 40 series GPUs
+```
 
 ### Download the PhysTwin Data
 Download the original data, processed data, and results into the project's root folder. (The following sections will explain how to process the raw observations and obtain the training results.)
@@ -80,7 +108,7 @@ Use the previously constructed PhysTwin to explore the interactive playground. U
 
 ![example](./assets/sloth.gif)
 
-Run the interactive playground with our different cases (Need to wait some time for the first usage of interactive playground; Can achieve about 30 FPS using RTX 4090)
+Run the interactive playground with our different cases (Need to wait some time for the first usage of interactive playground; Can achieve about 37 FPS using RTX 4090 on sloth case)
 
 ```
 python interactive_playground.py \
@@ -90,6 +118,16 @@ python interactive_playground.py \
 
 # Examples of usage:
 python interactive_playground.py --n_ctrl_parts 2 --case_name double_stretch_sloth
+python interactive_playground.py --inv_ctrl --n_ctrl_parts 2 --case_name double_lift_cloth_3
+```
+or in Docker
+```
+./docker_scripts/run.sh /path/to/data \
+                        /path/to/experiments \
+                        /path/to/experiments_optimization \
+                        /path/to/gaussian_output \
+# inside container
+conda activate phystwin_env
 python interactive_playground.py --inv_ctrl --n_ctrl_parts 2 --case_name double_lift_cloth_3
 ```
 
@@ -120,14 +158,17 @@ To evaluate the performance of the construected PhysTwin, need to render the ima
 # Use LBS to render the dynamic videos (The final videos in ./gaussian_output_dynamic folder)
 bash gs_run_simulate.sh
 python export_render_eval_data.py
-python visualize_render_results.py
-
 # Get the quantative results
 bash evaluate.sh
+
+# Get the qualitative results
+bash gs_run_simulate_white.sh
+python visualize_render_results.py
 ```
 
 ### Data Processing from Raw Videos
 The original data in each case only includes `color`, `depth`, `calibrate.pkl`, `metadata.json`. All other data are processed as below to get, including the projection, tracking and shape priors.
+(Note: Be aware of the conflict in the diff-gaussian-rasterization library between Gaussian Splatting and Trellis. For data processing, you don't need to install the gaussian splatting; ignore the last section in env_install.sh)
 ```
 # Process the data
 python script_process_data.py
@@ -152,6 +193,32 @@ python visualize_force.py --case_name single_clift_cloth_1 --n_ctrl_parts 1
 python visualize_force.py --case_name double_stretch_sloth 
 ```
 The visualziation video is saved under `experiments` folder.
+
+### Material Visualization
+Experimental feature to visualize the approximated material from the constructed PhysTwin.
+```
+python visualize_material.py \
+--case_name [case_name]
+
+# Examples of usage:
+python visualize_material.py --case_name double_lift_cloth_1
+python visualize_material.py --case_name single_push_rope
+python visualize_material.py --case_name double_stretch_sloth
+```
+
+
+### Multiple Objects Demos
+Try the experimental features for handling collisions among the multiple PhysTwins we construct.
+
+```
+# The stuff is deployed in the 'claw_matchine' branch
+git pull
+git checkout claw_machine
+
+# Play with the examples
+python interactive_playground.py --n_ctrl_parts 1 --case_name single_push_rope_1 --n_dup 4
+python interactive_playground.py --n_ctrl_parts 2 --case_name double_stretch_sloth --n_dup 2
+```
 
 ### Follow-up and Potential Collaborations  
 If you are interested in collaborating or extending this work for your research, feel free to contact us at `hanxiao.jiang@columbia.edu`.  

@@ -1,4 +1,3 @@
-# workspace/PhysTwin/qqtt/engine/trainer_warp.py
 from qqtt.data import RealData, SimpleData
 from qqtt.utils import logger, visualize_pc, cfg
 from qqtt.model.diff_simulator import (
@@ -17,11 +16,7 @@ import cv2
 from pynput import keyboard
 import pyrender
 import trimesh
-from pathlib import Path
-import datetime
-import numpy as np
-import glob
-from pynput.keyboard import Controller
+import matplotlib.pyplot as plt
 
 from gaussian_splatting.scene.gaussian_model import GaussianModel
 from gaussian_splatting.scene.cameras import Camera
@@ -46,21 +41,6 @@ import time
 import threading
 import time
 
-keyboard_controller = Controller()
-
-def simulate_keypress(key):
-    """
-    模拟按下并释放一个键。
-    """
-    keyboard_controller.press(key)
-    keyboard_controller.release(key)
-
-def clear_keyboard_state():
-    """
-    清空所有键的状态, 一般不需要, 因为pynput按下后自动释放了
-    """
-    pass  # 如果需要高级控制可以自己写，这里简单起见可以留空
-
 
 class InvPhyTrainerWarp:
     def __init__(
@@ -81,12 +61,6 @@ class InvPhyTrainerWarp:
 
         self.init_masks = None
         self.init_velocities = None
-        self.replay_init_gss = None
-        self.replay_init_ctrls = None
-        self.replay_keys = None
-        self.replay_step = 0
-        self.current_replay_idx = 0
-
         # Load the data
         if cfg.data_type == "real":
             self.dataset = RealData(visualize=False, save_gt=False)
@@ -175,8 +149,6 @@ class InvPhyTrainerWarp:
             gt_object_motions_valid=self.object_motions_valid,
             self_collision=cfg.self_collision,
         )
-
-        self.simulator.num_all_points = self.num_all_points
 
         if not pure_inference_mode:
             self.optimizer = torch.optim.Adam(
@@ -330,25 +302,7 @@ class InvPhyTrainerWarp:
                 num_object_springs,
             )
 
-    # 给 simulator 设置自定义起始点 (gs点云, ctrl控制点)，注意输入都是numpy array
-    # 从 interactive_mpc.py 获取它随机抽取到的起点(mpc_init)和终点(mpc_target)
-    def set_init_state_from_numpy(self, gs_np, ctrl_np):
-        gs_tensor = torch.tensor(gs_np, dtype=torch.float32, device=cfg.device)
-        ctrl_tensor = torch.tensor(ctrl_np, dtype=torch.float32, device=cfg.device)
-        self.simulator.set_init_state(
-            gs_tensor,
-            torch.zeros_like(gs_tensor),   # 初始速度为0
-            pure_inference=True
-        )
-        self.simulator.controller_points[0].data.copy_(ctrl_tensor)
-
-    """
-    训练绳子的动力学模型
-    基于物理模拟的弹簧质量模型参数优化的核心训练逻辑
-    目标是通过物理模拟过程中的损失进行梯度下降优化，从而学出更好的弹性参数（如 spring_Y, collide_elas 等），让模拟的绳子轨迹更贴近真实数据
-    """
     def train(self, start_epoch=-1):
-        print("🎯 方法 train 被调用, 不应在训练mpc的时候被调用。")
         # Render the initial visualization
         video_path = f"{cfg.base_dir}/train/init.mp4"
         self.visualize_sim(save_only=True, video_path=video_path)
@@ -362,8 +316,7 @@ class InvPhyTrainerWarp:
                 total_chamfer_loss = 0.0
                 total_track_loss = 0.0
             self.simulator.set_init_state(
-                self.simulator.wp_init_vertices, 
-                self.simulator.wp_init_velocities
+                self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
             )
             with wp.ScopedTimer("backward"):
                 for j in tqdm(range(1, cfg.train_frame)):
@@ -503,11 +456,7 @@ class InvPhyTrainerWarp:
 
         wandb.finish()
 
-    """
-    测试绳子的动力学模型
-    """
     def test(self, model_path=None):
-        print("🎯 方法 test 被调用, 不应在训练mpc的时候被调用")
         if model_path is not None:
             # Load the model
             logger.info(f"Load model from {model_path}")
@@ -543,10 +492,6 @@ class InvPhyTrainerWarp:
             save_path=save_path,
         )
 
-    """
-    执行一次完整的模拟 rollout,使用当前模型的物理参数（如 spring_Y, collide_elas 等），从初始状态出发，模拟整个 frame_len 长度的轨迹
-    保存模拟轨迹: mp4 或 pkl
-    """
     def visualize_sim(
         self, save_only=True, video_path=None, save_trajectory=False, save_path=None
     ):
@@ -554,8 +499,7 @@ class InvPhyTrainerWarp:
         # Visualize the whole simulation using current set of parameters in the physical simulator
         frame_len = self.dataset.frame_len
         self.simulator.set_init_state(
-            self.simulator.wp_init_vertices, 
-            self.simulator.wp_init_velocities
+            self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
         )
         vertices = [
             wp.to_torch(self.simulator.wp_states[0].wp_x, requires_grad=False).cpu()
@@ -606,137 +550,29 @@ class InvPhyTrainerWarp:
                 save_path=video_path,
             )
 
-    # def on_press(self, key):
-    #     try:
-    #         self.pressed_keys.add(key.char)
-    #     except AttributeError:
-    #         pass
-
-    # def on_release(self, key):
-    #     try:
-    #         self.pressed_keys.remove(key.char)
-    #     except (KeyError, AttributeError):
-    #         try:
-    #             self.pressed_keys.remove(str(key))
-    #         except KeyError:
-    #             pass
-
-    # 判断当前帧是否应该录制
-    def should_record_frame(self):
-        if len(self.recorded_frames) == 0:
-            return True  # 第1帧必须录
-
-        # 直接拿 simulator 里的当前粒子位置
-        current_frame = wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False)
-        current_frame = current_frame.detach().cpu().numpy()
-
-        last_frame = self.recorded_frames[-1]  # (N,3)
-
-        displacement = np.linalg.norm(current_frame - last_frame, axis=1).mean()
-        threshold = 1e-3  # 1mm，可以根据需要调整
-
-        #  (1) 有控制键按着
-        #  (2) 或者 cloth 自己动得够大
-        if len(self.pressed_keys) > 0:
-            return True
-        if displacement > threshold:
-            return True
-        return False
-
-    # 按下键盘后
     def on_press(self, key):
         try:
-            key_char = key.char.lower()
-            # 按下p键后，开始录制轨迹，再次按下则保存
-            if key_char == "p":
-                now = time.time()
-                if now - self.last_p_toggle > 0.5:  # 500ms防止粘滞
-                    self.recording = not self.recording
-                    self.last_p_toggle = now
-                    if self.recording:
-                        print("🎥 Recording started...")
-                        self.recorded_frames = []
-                        self.recorded_ctrls = []
-                    else:
-                        print("💾 Saving recorded sequence...")
-                        self.save_recorded_trajectory()
-            # 其他键：控制两个手对rope的移动
-            else:
-                self.pressed_keys.add(key_char)
+            self.pressed_keys.add(key.char)
         except AttributeError:
             pass
 
     def on_release(self, key):
         try:
-            self.pressed_keys.discard(key.char.lower())
-        except AttributeError:
-            pass
+            self.pressed_keys.remove(key.char)
+        except (KeyError, AttributeError):
+            try:
+                self.pressed_keys.remove(str(key))
+            except KeyError:
+                pass
 
-    # def get_target_change(self):
-    #     target_change = np.zeros((self.n_ctrl_parts, 3))
-    #     for key in self.pressed_keys:
-    #         if key in self.key_mappings:
-    #             idx, change = self.key_mappings[key]
-    #             target_change[idx] += change
-    #     return target_change
-    
-    # 通过键盘移动控制点
     def get_target_change(self):
-        output = np.zeros((self.n_ctrl_parts, 3))
-        for key in self.pressed_keys.copy():
-            action = self.key_mappings.get(key, None)
-            if action is None:
-                continue
-            if action == "save_frame":
-                self.save_current_gs_and_ctrl()
-            else:
-                part_id, delta = action
-                output[part_id] += delta
-        return output
+        target_change = np.zeros((self.n_ctrl_parts, 3))
+        for key in self.pressed_keys:
+            if key in self.key_mappings:
+                idx, change = self.key_mappings[key]
+                target_change[idx] += change
+        return target_change
 
-    # 我们将p键录制的轨迹存在~/workspace/PhysTwin/mpc_init
-    def save_recorded_trajectory(self):
-        save_dir = Path(os.path.expanduser("~/workspace/PhysTwin/mpc_init"))
-        save_dir.mkdir(exist_ok=True)
-
-        start_idx = 0
-        while (save_dir / f"{start_idx:04d}.ply").exists():
-            start_idx += 1
-
-        for i, (gs_xyz, ctrl_xyz) in enumerate(zip(self.recorded_frames, self.recorded_ctrls)):
-            idx = start_idx + i
-            # 保存控制点
-            np.save(save_dir / f"{idx:04d}.npy", ctrl_xyz)
-
-            # 保存 gs 点云
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(gs_xyz)
-            o3d.io.write_point_cloud(str(save_dir / f"{idx:04d}.ply"), pcd)
-
-        print(f"✅ Saved {len(self.recorded_frames)} frames to {save_dir}")
-
-    # 把replay过后的rollout存储为pkl
-    def save_replay_trajectory_as_pkl(self, start_idx=0):
-        save_dir = Path(os.path.expanduser("~/workspace/PhysTwin/mpc_replay"))
-        save_dir.mkdir(exist_ok=True)
-
-        start_idx = 0
-        while (save_dir / f"commands{start_idx:04d}.pkl").exists():
-            start_idx += 1
-
-        traj_data = {
-            "traj": np.array(self.recorded_frames[start_idx:]),   # (T', N_gs, 3)
-            "ctrl_traj": np.array(self.recorded_ctrls[start_idx:]) # (T', N_ctrl, 3)
-        }
-
-        save_path = save_dir / f"commands{start_idx:04d}.pkl"
-        with open(save_path, 'wb') as f:
-            pickle.dump(traj_data, f)
-
-        print(f"✅ Saved replay trajectory with {len(self.recorded_frames)} frames to {save_path}")
-
-
-    # playground的UI设置
     def init_control_ui(self):
 
         height = cfg.WH[1]
@@ -822,12 +658,12 @@ class InvPhyTrainerWarp:
             ),  # Down
         }
 
-        # self.hand_left = cv2.imread("./assets/Picture2.png", cv2.IMREAD_UNCHANGED)[
-        #     :, :, [2, 1, 0, 3]
-        # ]
-        # self.hand_right = cv2.imread("./assets/Picture1.png", cv2.IMREAD_UNCHANGED)[
-        #     :, :, [2, 1, 0, 3]
-        # ]
+        self.hand_left = cv2.imread("./assets/Picture2.png", cv2.IMREAD_UNCHANGED)[
+            :, :, [2, 1, 0, 3]
+        ]
+        self.hand_right = cv2.imread("./assets/Picture1.png", cv2.IMREAD_UNCHANGED)[
+            :, :, [2, 1, 0, 3]
+        ]
 
         self.hand_left_pos = torch.tensor([0.0, 0.0, 0.0], device=cfg.device)
         self.hand_right_pos = torch.tensor([0.0, 0.0, 0.0], device=cfg.device)
@@ -1021,11 +857,10 @@ class InvPhyTrainerWarp:
 
         return result
 
-    # 对每一帧的UI进行更新
     def update_frame(self, frame, pressed_keys):
         result = frame.copy()
 
-        # result = self._overlay_hand_icons(result) 暂时不让这个icon显示
+        result = self._overlay_hand_icons(result)
 
         # overlay an transparent white mask on the bottom left and bottom right corners with width trans_width, and height trans_height
         trans_width = 160
@@ -1101,27 +936,9 @@ class InvPhyTrainerWarp:
         min_idx = min_indices[torch.argmin(min_dist_per_ctrl_pts)]
         return self.structure_points[min_idx].unsqueeze(0)
 
-    # 交互场景
     def interactive_playground(
-        self, model_path, gs_path, n_ctrl_parts=1, inv_ctrl=False,
-        init_idx=None,
-        target_idx=None,
-        replay_keys=None,
-        replay_init_ctrls=None,
-        replay_init_gss=None,
-        start_idx=None,
-    ):  
-        self.recording = False
-        self.recorded_frames = []
-        self.recorded_ctrls = []
-        self.last_p_toggle = 0
-        self.replay_keys = replay_keys
-        self.replay_step = 0
-        self.current_replay_idx = 0
-        self.replay_init_ctrls = replay_init_ctrls
-        self.replay_init_gss = replay_init_gss
-
-
+        self, model_path, gs_path, n_ctrl_parts=1, inv_ctrl=False
+    ):
         # Load the model
         logger.info(f"Load model from {model_path}")
         checkpoint = torch.load(model_path, map_location=cfg.device)
@@ -1145,36 +962,34 @@ class InvPhyTrainerWarp:
             collide_object_elas.detach().clone(),
             collide_object_fric.detach().clone(),
         )
-        print(f"Simulator dt: {self.simulator.dt}")
 
         ###########################################################################
 
-        logger.info("加载场景")
-
+        logger.info("Party Time Start!!!!")
         self.simulator.set_init_state(
-            self.simulator.wp_init_vertices, 
-            self.simulator.wp_init_velocities
+            self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
         )
         prev_x = wp.to_torch(
             self.simulator.wp_states[0].wp_x, requires_grad=False
         ).clone()
-        # 设置渲染视角
+
         vis_cam_idx = 0
         FPS = cfg.FPS
         width, height = cfg.WH
         intrinsic = cfg.intrinsics[vis_cam_idx]
         w2c = cfg.w2cs[vis_cam_idx]
+
         current_target = self.simulator.controller_points[0]
         prev_target = current_target
+
         vis_controller_points = current_target.cpu().numpy()
-        # 载入 Gaussian Splatting 模型
+
         gaussians = GaussianModel(sh_degree=3)
         gaussians.load_ply(gs_path)
         gaussians = remove_gaussians_with_low_opacity(gaussians, 0.1)
         gaussians.isotropic = True
         current_pos = gaussians.get_xyz
         current_rot = gaussians.get_rotation
-        # 准备背景图像和渲染配置
         use_white_background = True  # set to True for white background
         bg_color = [1, 1, 1] if use_white_background else [0, 0, 0]
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -1185,8 +1000,8 @@ class InvPhyTrainerWarp:
         image_path = cfg.bg_img_path
         overlay = cv2.imread(image_path)
         overlay = cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB)
-        self.gaussians = gaussians
-        # 控制点聚类（n_ctrl_parts > 1）
+        overlay = torch.tensor(overlay, dtype=torch.float32, device=cfg.device)
+
         if n_ctrl_parts > 1:
             kmeans = KMeans(n_clusters=n_ctrl_parts, random_state=0, n_init=10)
             cluster_labels = kmeans.fit_predict(vis_controller_points)
@@ -1210,7 +1025,6 @@ class InvPhyTrainerWarp:
                 masks_ctrl_pts = [masks_ctrl_pts[1], masks_ctrl_pts[0]]
         else:
             masks_ctrl_pts = None
-        # 设置控制键绑定（键盘按键 → 控制指令）
         self.n_ctrl_parts = n_ctrl_parts
         self.mask_ctrl_pts = masks_ctrl_pts
         self.scale_factors = 1.0
@@ -1234,13 +1048,11 @@ class InvPhyTrainerWarp:
             "l": (1, np.array([0, 0.005, 0]) * self.inv_ctrl),
             "o": (1, np.array([0, 0, 0.005])),
             "u": (1, np.array([0, 0, -0.005])),
-            "p": "save_frame",
         }
         self.pressed_keys = set()
         self.w2c = w2c
         self.intrinsic = intrinsic
         self.init_control_ui()
-        # 初始化手图标位置
         if n_ctrl_parts > 1:
             hand_positions = []
             for i in range(2):
@@ -1252,11 +1064,9 @@ class InvPhyTrainerWarp:
         else:
             target_points = torch.from_numpy(vis_controller_points).to("cuda")
             self.hand_left_pos = self._find_closest_point(target_points)
-        # 键盘监听器
-        if replay_keys is None:
-            listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
-            listener.start()
-        # 初始化 动作缓存 变量
+
+        listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        listener.start()
         self.target_change = np.zeros((n_ctrl_parts, 3))
 
         ############## Temporary timer ##############
@@ -1321,43 +1131,10 @@ class InvPhyTrainerWarp:
         frame_count = 0
 
         ############## End Temporary timer ##############
+
         while True:
+
             total_timer.start()
-
-            if replay_keys is not None:
-                if self.replay_step == 0 or self.replay_step >= len(self.replay_keys[self.current_replay_idx]):
-                    if self.replay_step != 0:
-                        self.current_replay_idx += 1
-
-                    # 如果已经没有轨迹了，保存轨迹，退出
-                    if self.current_replay_idx >= len(self.replay_keys):
-                        print("✅ All replays finished.")
-                        self.save_replay_trajectory_as_pkl(start_idx=start_idx)
-                        break
-
-                    print(f"🔄 Start replay traj {self.current_replay_idx}...")
-                    
-                    self.simulator.set_init_state(
-                        self.simulator.wp_init_vertices, 
-                        self.simulator.wp_init_velocities
-                    )
-
-                    # Reset current_target
-                    current_target = self.simulator.controller_points[0]
-
-                    # Reset replay_step
-                    self.replay_step = 0
-
-                # Then fetch key for current step
-                keys_this_frame = self.replay_keys[self.current_replay_idx][self.replay_step]
-                print(f"[Frame {self.replay_step}] Keys pressed: {keys_this_frame}")
-                print(f"[Frame {self.replay_step}] Controller 1 mean pos: {self.simulator.controller_points[0][:15].mean(dim=0).cpu().numpy()} | Controller 2 mean pos: {self.simulator.controller_points[0][15:].mean(dim=0).cpu().numpy()}")
-
-                self.pressed_keys.clear()
-                for key in keys_this_frame:
-                    self.pressed_keys.add(key)
-                self.replay_step += 1
-                        
 
             # 1. Simulator step
 
@@ -1368,38 +1145,11 @@ class InvPhyTrainerWarp:
                 self.simulator.update_collision_graph()
             wp.capture_launch(self.simulator.forward_graph)
             x = wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False)
-            
-            target_change = self.get_target_change()
-            # print(f"🎯 Target change: {target_change}")
-
-            # 如果在录制模式下，保存当前帧的 rope + control 状态
-            if replay_keys is not None:
-                if self.replay_step >= start_idx:
-                    # 开始录制
-                    cur_frame = x[: self.simulator.num_all_points].detach().cpu().numpy()
-                    ctrl_frame = self.simulator.controller_points[0].detach().cpu().numpy()
-                    self.recorded_frames.append(cur_frame)
-                    self.recorded_ctrls.append(ctrl_frame)
-            else:
-                if self.recording:
-                    if self.should_record_frame():
-                        cur_frame = x[: self.simulator.num_all_points].detach().cpu().numpy()
-                        ctrl_frame = self.simulator.controller_points[0].detach().cpu().numpy()
-                        self.recorded_frames.append(cur_frame)
-                        self.recorded_ctrls.append(ctrl_frame)
-
-
-            self.target_change = target_change  # store for next loop
-
             # Set the intial state for the next step
             self.simulator.set_init_state(
                 self.simulator.wp_states[-1].wp_x,
                 self.simulator.wp_states[-1].wp_v,
             )
-
-            # cur_ctrl = self.simulator.controller_points[0].detach().cpu().numpy()
-            # print(f"🧵 Current hand1 mean: {cur_ctrl[:15].mean(axis=0)}")
-            # print(f"🧵 Current hand2 mean: {cur_ctrl[15:].mean(axis=0)}")
 
             sim_time = sim_timer.stop()
             component_times["simulator"].append(sim_time)
@@ -1410,7 +1160,7 @@ class InvPhyTrainerWarp:
 
             frame_timer.start()
 
-            frame = overlay.copy()
+            frame = overlay.clone()
 
             frame_setup_time = (
                 frame_timer.stop()
@@ -1424,7 +1174,7 @@ class InvPhyTrainerWarp:
             # render with gaussians and paste the image on top of the frame
             results = render_gaussian(view, gaussians, None, background)
             rendering = results["render"]  # (4, H, W)
-            image = rendering.permute(1, 2, 0).detach().cpu().numpy()
+            image = rendering.permute(1, 2, 0).detach()
 
             render_time = render_timer.stop()
             component_times["rendering"].append(render_time)
@@ -1434,21 +1184,22 @@ class InvPhyTrainerWarp:
             # Continue frame compositing
             frame_timer.start()
 
-            # composition code from Hanxiao
-            image = image.clip(0, 1)
+            image = image.clamp(0, 1)
             if use_white_background:
-                image_mask = np.logical_and(
-                    (image != 1.0).any(axis=2), image[:, :, 3] > 100 / 255
+                image_mask = torch.logical_and(
+                    (image != 1.0).any(dim=2), image[:, :, 3] > 100 / 255
                 )
             else:
-                image_mask = np.logical_and(
-                    (image != 0.0).any(axis=2), image[:, :, 3] > 100 / 255
+                image_mask = torch.logical_and(
+                    (image != 0.0).any(dim=2), image[:, :, 3] > 100 / 255
                 )
-            image[~image_mask, 3] = 0
+            image[..., 3].masked_fill_(~image_mask, 0.0)
 
             alpha = image[..., 3:4]
             rgb = image[..., :3] * 255
             frame = alpha * rgb + (1 - alpha) * frame
+            frame = frame.cpu().numpy()
+            image_mask = image_mask.cpu().numpy()
             frame = frame.astype(np.uint8)
 
             frame = self.update_frame(frame, self.pressed_keys)
@@ -1479,23 +1230,23 @@ class InvPhyTrainerWarp:
             torch.cuda.synchronize()
 
             if prev_x is not None:
-
-                prev_particle_pos = prev_x
-                cur_particle_pos = x
-
-                if relations is None:
-                    relations = get_topk_indices(
-                        prev_x, K=16
-                    )  # only computed in the first iteration
-
-                if weights is None:
-                    weights, weights_indices = knn_weights_sparse(
-                        prev_particle_pos, current_pos, K=16
-                    )  # only computed in the first iteration
-
-                interp_timer.start()
-
                 with torch.no_grad():
+
+                    prev_particle_pos = prev_x
+                    cur_particle_pos = x
+
+                    if relations is None:
+                        relations = get_topk_indices(
+                            prev_x, K=16
+                        )  # only computed in the first iteration
+
+                    if weights is None:
+                        weights, weights_indices = knn_weights_sparse(
+                            prev_particle_pos, current_pos, K=16
+                        )  # only computed in the first iteration
+
+                    interp_timer.start()
+
                     weights = calc_weights_vals_from_indices(
                         prev_particle_pos, current_pos, weights_indices
                     )
@@ -1520,9 +1271,9 @@ class InvPhyTrainerWarp:
             torch.cuda.synchronize()
 
             prev_x = x.clone()
+
             prev_target = current_target
             target_change = self.get_target_change()
-
             if masks_ctrl_pts is not None:
                 for i in range(n_ctrl_parts):
                     if masks_ctrl_pts[i].sum() > 0:
@@ -1564,14 +1315,14 @@ class InvPhyTrainerWarp:
                         component_times[key] = component_times[key][-STATS_WINDOW:]
 
                 avg_fps = np.mean(fps_history)
-                # print(
-                #     f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
-                # )
-                # print(f"FPS: {avg_fps:.2f}")
+                print(
+                    f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
+                )
+                print(f"FPS: {avg_fps:.2f}")
 
                 # Calculate percentages for pie chart
                 total_avg = np.mean(component_times["total"])
-                # print(f"Total Frame Time: {total_avg*1000:.2f} ms")
+                print(f"Total Frame Time: {total_avg*1000:.2f} ms")
 
                 # Display individual component times
                 for key in [
@@ -1584,36 +1335,11 @@ class InvPhyTrainerWarp:
                 ]:
                     avg_time = np.mean(component_times[key])
                     percentage = (avg_time / total_avg) * 100
-                    # print(
-                    #     f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
-                    # )
+                    print(
+                        f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
+                    )
 
-        if replay_keys is not None:
-            listener.stop()
-            exit(0)
-        else:
-            listener.stop()
-
-    def save_current_gs_and_ctrl(self):
-        save_dir = Path(os.path.expanduser("~/workspace/PhysTwin/mpc_init"))
-        save_dir.mkdir(exist_ok=True)
-
-        existing = sorted(glob.glob(os.path.join(save_dir, "*.ply")))
-        if existing:
-            last_idx = int(os.path.basename(existing[-1]).split(".")[0])
-        else:
-            last_idx = 0
-
-        idx = last_idx + 1
-        gs_save_path = os.path.join(save_dir, f"{idx:04d}.ply")
-        ctrl_save_path = os.path.join(save_dir, f"{idx:04d}.npy")
-
-        # 保存
-        self.gaussians.save_ply(str(gs_save_path))
-        ctrl_points = self.simulator.controller_points[0].detach().cpu().numpy()
-        np.save(ctrl_save_path, ctrl_points)
-
-        print("✅ [Saved] GS")
+        listener.stop()
 
     def _transform_gs(self, gaussians, M, majority_scale=1):
 
@@ -1880,20 +1606,20 @@ class InvPhyTrainerWarp:
 
             torch.cuda.synchronize()
 
-            # Do LBS on the gaussian kernels
-            prev_particle_pos = prev_x
-            cur_particle_pos = x
-            if relations is None:
-                relations = get_topk_indices(
-                    prev_x, K=16
-                )  # only computed in the first iteration
-
-            if weights is None:
-                weights, weights_indices = knn_weights_sparse(
-                    prev_particle_pos, current_pos, K=16
-                )  # only computed in the first iteration
-
             with torch.no_grad():
+                # Do LBS on the gaussian kernels
+                prev_particle_pos = prev_x
+                cur_particle_pos = x
+                if relations is None:
+                    relations = get_topk_indices(
+                        prev_x, K=16
+                    )  # only computed in the first iteration
+
+                if weights is None:
+                    weights, weights_indices = knn_weights_sparse(
+                        prev_particle_pos, current_pos, K=16
+                    )  # only computed in the first iteration
+
                 weights = calc_weights_vals_from_indices(
                     prev_particle_pos, current_pos, weights_indices
                 )
@@ -2017,11 +1743,276 @@ class InvPhyTrainerWarp:
             )
 
             total_force = -spring_forces.sum(dim=0)
-            # total_force = spring_forces[0]
-            # import pdb
-            # pdb.set_trace()
-
         return total_force
+
+    def visualize_material(self, model_path, gs_path, relative_material=True):
+        # Load the model
+        logger.info(f"Load model from {model_path}")
+        checkpoint = torch.load(model_path, map_location=cfg.device)
+
+        spring_Y = checkpoint["spring_Y"]
+        collide_elas = checkpoint["collide_elas"]
+        collide_fric = checkpoint["collide_fric"]
+        collide_object_elas = checkpoint["collide_object_elas"]
+        collide_object_fric = checkpoint["collide_object_fric"]
+        num_object_springs = checkpoint["num_object_springs"]
+
+        assert (
+            len(spring_Y) == self.simulator.n_springs
+        ), "Check if the loaded checkpoint match the config file to connect the springs"
+
+        self.simulator.set_spring_Y(torch.log(spring_Y).detach().clone())
+        self.simulator.set_collide(
+            collide_elas.detach().clone(), collide_fric.detach().clone()
+        )
+        self.simulator.set_collide_object(
+            collide_object_elas.detach().clone(),
+            collide_object_fric.detach().clone(),
+        )
+
+        video_path = f"{cfg.base_dir}/material_visualization.mp4"
+
+        vis_cam_idx = 0
+        FPS = cfg.FPS
+        width, height = cfg.WH
+        intrinsic = cfg.intrinsics[vis_cam_idx]
+        w2c = cfg.w2cs[vis_cam_idx]
+
+        gaussians = GaussianModel(sh_degree=3)
+        gaussians.load_ply(gs_path)
+        gaussians = remove_gaussians_with_low_opacity(gaussians, 0.1)
+        gaussians.isotropic = True
+        current_pos = gaussians.get_xyz
+        current_rot = gaussians.get_rotation
+        use_white_background = True  # set to True for white background
+        bg_color = [1, 1, 1] if use_white_background else [0, 0, 0]
+        background = torch.tensor(bg_color, dtype=torch.float32, device=cfg.device)
+        view = self._create_gs_view(w2c, intrinsic, height, width)
+        prev_x = None
+        relations = None
+        weights = None
+
+        # Start to visualize the stuffs
+        logger.info("Visualizing the simulation")
+        # Visualize the whole simulation using current set of parameters in the physical simulator
+        frame_len = self.dataset.frame_len
+        self.simulator.set_init_state(
+            self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
+        )
+        prev_x = wp.to_torch(
+            self.simulator.wp_states[0].wp_x, requires_grad=False
+        ).clone()
+
+        vis = o3d.visualization.Visualizer()
+        vis.create_window(visible=False, width=width, height=height)
+        fourcc = cv2.VideoWriter_fourcc(*"avc1")  # Codec for .mp4 file format
+        video_writer = cv2.VideoWriter(video_path, fourcc, FPS, (width, height))
+
+        frame_path = f"{cfg.overlay_path}/{vis_cam_idx}/0.png"
+        frame = cv2.imread(frame_path)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        results = render_gaussian(view, gaussians, None, background)
+        rendering = results["render"]  # (4, H, W)
+        image = rendering.permute(1, 2, 0).detach().cpu().numpy()
+
+        image = image.clip(0, 1)
+        if use_white_background:
+            image_mask = np.logical_and(
+                (image != 1.0).any(axis=2), image[:, :, 3] > 100 / 255
+            )
+        else:
+            image_mask = np.logical_and(
+                (image != 0.0).any(axis=2), image[:, :, 3] > 100 / 255
+            )
+        image[~image_mask, 3] = 0
+
+        alpha = image[..., 3:4]
+        rgb = image[..., :3] * 255
+        frame = alpha * rgb + (1 - alpha) * frame
+        frame = frame.astype(np.uint8)
+
+        # Add the material visualization
+        object_springs = self.init_springs[:num_object_springs]
+        material_field = torch.zeros((self.num_all_points, 3), device=cfg.device)
+        count_field = torch.zeros(
+            self.num_all_points, dtype=torch.int32, device=cfg.device
+        )
+        clamp_object_spring_Y = torch.clamp(
+            spring_Y[:num_object_springs], min=cfg.spring_Y_min, max=cfg.spring_Y_max
+        )
+        object_rest_lengths = self.init_rest_lengths[:num_object_springs]
+
+        # idx1 = object_springs[:, 0]
+        # idx2 = object_springs[:, 1]
+        # x1 = prev_x[idx1]
+        # x2 = prev_x[idx2]
+        # dis = x2 - x1
+        # dis_len = torch.norm(dis, dim=1)
+        # d = dis / torch.clamp(dis_len, min=1e-6)[:, None]
+        # # import pdb
+        # # pdb.set_trace()
+        # material_field.index_add_(
+        #     0,
+        #     idx1,
+        #     clamp_object_spring_Y[:, None] / object_rest_lengths[:, None] * d,
+        # )
+        # material_field.index_add_(
+        #     0,
+        #     idx2,
+        #     clamp_object_spring_Y[:, None] / object_rest_lengths[:, None] * d,
+        # )
+        # material_field = torch.norm(material_field, dim=1)
+        # import pdb
+        # pdb.set_trace()
+        # count_field.index_add_(
+        #     0, idx1, torch.ones_like(idx1, dtype=torch.int32, device=cfg.device)
+        # )
+        # count_field.index_add_(
+        #     0, idx2, torch.ones_like(idx2, dtype=torch.int32, device=cfg.device)
+        # )
+        # material_field /= count_field
+        # if relative_material:
+        #     material_field_normalized = (material_field - material_field.min()) / (
+        #         material_field.max() - material_field.min()
+        #     )
+        # else:
+        #     material_field_normalized = (material_field - cfg.spring_Y_min) / (
+        #         cfg.spring_Y_max - cfg.spring_Y_min
+        #     )
+        # rainbow_colors = plt.cm.rainbow(material_field_normalized.cpu().numpy())[:, :3]
+
+        stiffness_map = compute_effective_stiffness(
+            points=prev_x,
+            springs=object_springs,
+            Y=clamp_object_spring_Y,
+            rest_lengths=object_rest_lengths,
+            device=cfg.device,
+        )
+        normed = (stiffness_map - stiffness_map.min()) / (
+            stiffness_map.max() - stiffness_map.min()
+        )
+        rainbow_colors = plt.cm.rainbow(normed.cpu().numpy())[:, :3]
+
+        object_pcd = o3d.geometry.PointCloud()
+        object_pcd.points = o3d.utility.Vector3dVector(prev_x.cpu().numpy())
+        object_pcd.colors = o3d.utility.Vector3dVector(rainbow_colors)
+        vis.add_geometry(object_pcd)
+
+        # Adjust the viewpoint
+        view_control = vis.get_view_control()
+        camera_params = o3d.camera.PinholeCameraParameters()
+        intrinsic_parameter = o3d.camera.PinholeCameraIntrinsic(
+            width, height, intrinsic
+        )
+        camera_params.intrinsic = intrinsic_parameter
+        camera_params.extrinsic = w2c
+        view_control.convert_from_pinhole_camera_parameters(
+            camera_params, allow_arbitrary=True
+        )
+
+        material_image = np.asarray(vis.capture_screen_float_buffer(do_render=True))
+        material_image = (material_image * 255).astype(np.uint8)
+        material_vis_mask = np.all(material_image == [255, 255, 255], axis=-1)
+        frame[~material_vis_mask] = material_image[~material_vis_mask]
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        cv2.imshow("Interactive Playground", frame)
+        cv2.waitKey(1)
+        video_writer.write(frame)
+
+        for i in tqdm(range(1, frame_len)):
+            if cfg.data_type == "real":
+                self.simulator.set_controller_target(i, pure_inference=True)
+            if self.simulator.object_collision_flag:
+                self.simulator.update_collision_graph()
+
+            wp.capture_launch(self.simulator.forward_graph)
+            x = wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False)
+            # Set the intial state for the next step
+            self.simulator.set_init_state(
+                self.simulator.wp_states[-1].wp_x,
+                self.simulator.wp_states[-1].wp_v,
+            )
+
+            torch.cuda.synchronize()
+
+            with torch.no_grad():
+                # Do LBS on the gaussian kernels
+                prev_particle_pos = prev_x
+                cur_particle_pos = x
+                if relations is None:
+                    relations = get_topk_indices(
+                        prev_x, K=16
+                    )  # only computed in the first iteration
+
+                if weights is None:
+                    weights, weights_indices = knn_weights_sparse(
+                        prev_particle_pos, current_pos, K=16
+                    )  # only computed in the first iteration
+
+                weights = calc_weights_vals_from_indices(
+                    prev_particle_pos, current_pos, weights_indices
+                )
+
+                current_pos, current_rot, _ = interpolate_motions_speedup(
+                    bones=prev_particle_pos,
+                    motions=cur_particle_pos - prev_particle_pos,
+                    relations=relations,
+                    weights=weights,
+                    weights_indices=weights_indices,
+                    xyz=current_pos,
+                    quat=current_rot,
+                )
+
+                # update gaussians with the new positions and rotations
+                gaussians._xyz = current_pos
+                gaussians._rotation = current_rot
+
+            prev_x = x.clone()
+
+            frame_path = f"{cfg.overlay_path}/{vis_cam_idx}/{i}.png"
+            frame = cv2.imread(frame_path)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            results = render_gaussian(view, gaussians, None, background)
+            rendering = results["render"]  # (4, H, W)
+            image = rendering.permute(1, 2, 0).detach().cpu().numpy()
+
+            image = image.clip(0, 1)
+            if use_white_background:
+                image_mask = np.logical_and(
+                    (image != 1.0).any(axis=2), image[:, :, 3] > 100 / 255
+                )
+            else:
+                image_mask = np.logical_and(
+                    (image != 0.0).any(axis=2), image[:, :, 3] > 100 / 255
+                )
+            image[~image_mask, 3] = 0
+
+            alpha = image[..., 3:4]
+            rgb = image[..., :3] * 255
+            frame = alpha * rgb + (1 - alpha) * frame
+            frame = frame.astype(np.uint8)
+
+            # Update the object pcd
+            object_pcd.points = o3d.utility.Vector3dVector(prev_x.cpu().numpy())
+            vis.update_geometry(object_pcd)
+
+            vis.poll_events()
+            vis.update_renderer()
+
+            force_image = np.asarray(vis.capture_screen_float_buffer(do_render=True))
+            force_image = (force_image * 255).astype(np.uint8)
+            force_vis_mask = np.all(force_image == [255, 255, 255], axis=-1)
+            frame[~force_vis_mask] = force_image[~force_vis_mask]
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            video_writer.write(frame)
+
+            cv2.imshow("Interactive Playground", frame)
+            cv2.waitKey(1)
+        vis.destroy_window()
+        video_writer.release()
 
 
 def get_simple_shadow(
@@ -2123,3 +2114,70 @@ def _caculate_align_mat(pVec_Arr):
         )
     qTrans_Mat *= scale
     return qTrans_Mat
+
+
+def construct_stiffness_matrix_sparse(
+    springs, positions, spring_Y, rest_lengths, num_points, device
+):
+    # springs: (N_springs, 2)
+    # positions: (N_points, 3)
+    # spring_Y: (N_springs,)
+    # rest_lengths: (N_springs,)
+
+    i = springs[:, 0]
+    j = springs[:, 1]
+
+    x_i = positions[i]  # (N, 3)
+    x_j = positions[j]
+    d = x_j - x_i  # (N, 3)
+    d_norm = torch.norm(d, dim=1, keepdim=True) + 1e-8
+    d_hat = d / d_norm  # (N, 3)
+
+    coeff = spring_Y / rest_lengths  # (N,)
+    k_blocks = coeff[:, None, None] * (
+        d_hat[:, :, None] @ d_hat[:, None, :]
+    )  # (N, 3, 3)
+
+    indices = []
+    values = []
+
+    for shift_i, shift_j, sign in [(0, 0, 1), (0, 1, -1), (1, 0, -1), (1, 1, 1)]:
+        node_i = springs[:, shift_i]
+        node_j = springs[:, shift_j]
+
+        for a in range(3):
+            for b in range(3):
+                row_idx = 3 * node_i + a
+                col_idx = 3 * node_j + b
+                val = sign * k_blocks[:, a, b]
+                indices.append(torch.stack([row_idx, col_idx], dim=0))  # (2, N)
+                values.append(val)
+
+    indices = torch.cat(indices, dim=1)  # (2, total_nonzero)
+    values = torch.cat(values, dim=0)  # (total_nonzero,)
+    size = (3 * num_points, 3 * num_points)
+    K_sparse = torch.sparse_coo_tensor(indices, values, size, device=device).coalesce()
+    return K_sparse
+
+
+def compute_effective_stiffness(points, springs, Y, rest_lengths, device):
+    """
+    Compute effective stiffness for each point based on stiffness matrix diagonal blocks.
+    Return: (N_points,) tensor of Frobenius norm of 3x3 diagonal blocks in stiffness matrix.
+    """
+    num_points = points.shape[0]
+    K_sparse = construct_stiffness_matrix_sparse(
+        springs=springs,
+        positions=points,
+        spring_Y=Y,
+        rest_lengths=rest_lengths,
+        num_points=num_points,
+        device=device,
+    )
+
+    K_dense = K_sparse.to_dense()
+    stiffness_map = torch.zeros(num_points, device=device)
+    for i in range(num_points):
+        block = K_dense[3 * i : 3 * i + 3, 3 * i : 3 * i + 3]
+        stiffness_map[i] = torch.norm(block, p="fro")
+    return stiffness_map

@@ -1,4 +1,3 @@
-# workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/diffusion_policy_3d/dataset/adroit_dataset.py
 from typing import Dict
 import torch
 import numpy as np

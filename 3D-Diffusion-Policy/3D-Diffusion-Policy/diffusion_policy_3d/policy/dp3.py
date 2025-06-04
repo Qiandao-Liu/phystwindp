@@ -1,4 +1,3 @@
-# workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/diffusion_policy_3d/policy/dp3.py
 from typing import Dict
 import math
 import torch
@@ -183,8 +182,6 @@ class DP3(BasePolicy):
         # normalize input
         nobs = self.normalizer.normalize(obs_dict)
         # this_n_point_cloud = nobs['imagin_robot'][..., :3] # only use coordinate
-        print("[DP DEBUG] Before encoder, point_cloud shape:", this_nobs['point_cloud'].shape)
-
         if not self.use_pc_color:
             nobs['point_cloud'] = nobs['point_cloud'][..., :3]
         this_n_point_cloud = nobs['point_cloud']

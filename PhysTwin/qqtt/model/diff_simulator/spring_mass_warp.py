@@ -1,4 +1,3 @@
-# workspace/PhysTwin/qqtt/model/diff_simulator/spring_mass_warp.py
 import torch
 from qqtt.utils import logger, cfg
 import warp as wp
@@ -43,25 +42,25 @@ class State:
         return self.wp_x.requires_grad
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def copy_vec3(data: wp.array(dtype=wp.vec3), origin: wp.array(dtype=wp.vec3)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def copy_int(data: wp.array(dtype=wp.int32), origin: wp.array(dtype=wp.int32)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def copy_float(data: wp.array(dtype=wp.float32), origin: wp.array(dtype=wp.float32)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def set_control_points(
     num_substeps: int,
     original_control_point: wp.array(dtype=wp.vec3),
@@ -226,7 +225,8 @@ def loop(
 
     return valid_count, J_sum
 
-@wp.kernel(enable_backward=True)
+
+@wp.kernel(enable_backward=False)
 def update_potential_collision(
     x: wp.array(dtype=wp.vec3),
     masks: wp.array(dtype=wp.int32),
@@ -349,8 +349,8 @@ def integrate_ground_collision(
     x_new[tid] = x0 + v0 * toi + v1 * (dt - toi)
     v_new[tid] = v1
 
-# 不反向传播
-@wp.kernel(enable_backward=True)
+
+@wp.kernel(enable_backward=False)
 def compute_distances(
     pred: wp.array(dtype=wp.vec3),
     gt: wp.array(dtype=wp.vec3),
@@ -364,8 +364,8 @@ def compute_distances(
     else:
         distances[i, j] = 1e6
 
-# 不反向传播
-@wp.kernel(enable_backward=True)
+
+@wp.kernel(enable_backward=False)
 def compute_neigh_indices(
     distances: wp.array2d(dtype=float),
     neigh_indices: wp.array(dtype=wp.int32),
@@ -445,12 +445,12 @@ def compute_track_loss(
         wp.atomic_add(track_loss, 0, final_track_loss)
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def set_int(input: int, output: wp.array(dtype=wp.int32)):
     output[0] = input
 
 
-@wp.kernel(enable_backward=True)
+@wp.kernel(enable_backward=False)
 def update_acc(
     v1: wp.array(dtype=wp.vec3),
     v2: wp.array(dtype=wp.vec3),

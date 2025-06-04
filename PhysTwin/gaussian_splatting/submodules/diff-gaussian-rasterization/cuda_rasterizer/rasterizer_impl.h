@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <cstdint>    // for uint32_t, uint64_t
-#include <cstddef>    // for std::uintptr_t, std::size_t
 #include <iostream>
 #include <vector>
 #include "rasterizer.h"

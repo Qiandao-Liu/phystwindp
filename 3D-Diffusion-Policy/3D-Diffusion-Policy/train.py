@@ -1,4 +1,3 @@
-# workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/train.py
 if __name__ == "__main__":
     import sys
     import os

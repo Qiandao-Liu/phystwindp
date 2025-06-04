@@ -9,7 +9,7 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-from gaussian_splatting.scene.cameras import Camera
+from ..scene.cameras import Camera
 import numpy as np
 from ..utils.graphics_utils import fov2focal
 from ..utils.general_utils import PILtoTorch

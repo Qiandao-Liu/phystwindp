@@ -1,4 +1,3 @@
-# /home/qiandaoliu/workspace/3D-Diffusion-Policy/3D-Diffusion-Policy/diffusion_policy_3d/model/vision/pointnet_extractor.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
