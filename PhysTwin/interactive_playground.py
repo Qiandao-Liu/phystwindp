@@ -1,3 +1,6 @@
+"""
+python interactive_playground.py --inv_ctrl --n_ctrl_parts 2 --case_name double_lift_cloth_1
+"""
 from qqtt import InvPhyTrainerWarp
 from qqtt.utils import logger, cfg
 from datetime import datetime
