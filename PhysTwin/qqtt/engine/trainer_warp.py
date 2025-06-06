@@ -61,6 +61,19 @@ class InvPhyTrainerWarp:
         cfg.run_name = base_dir.split("/")[-1]
         cfg.train_frame = train_frame
 
+        print("📦 Loading training data from:", data_path)
+        with open(data_path, 'rb') as f:
+            data = pickle.load(f)
+        print("📦 Keys in final_data.pkl:", data.keys())
+
+        print("✅ InvPhyTrainerWarp initialized")
+        print("   - data_path =", data_path)
+        print("   - base_dir =", base_dir)
+        print("   - pure_inference_mode =", pure_inference_mode)
+        print("📐 controller_points shape:", data['controller_points'].shape)
+        print("📐 object_points shape:", data['object_points'].shape)
+        print("📐 surface_points shape:", data['surface_points'].shape)
+                
         self.init_masks = None
         self.init_velocities = None
         # Load the data
@@ -450,6 +463,8 @@ class InvPhyTrainerWarp:
                     logger.info(
                         f"Latest best model saved: epoch {best_epoch} with loss {best_loss}"
                     )
+                    
+                    print("🔧 Loading model checkpoint:", best_model_path)
 
                 torch.save(cur_model, f"{cfg.base_dir}/train/iter_{i}.pth")
                 logger.info(

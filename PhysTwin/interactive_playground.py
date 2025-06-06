@@ -84,6 +84,11 @@ if __name__ == "__main__":
 
     exp_name = "init=hybrid_iso=True_ldepth=0.001_lnormal=0.0_laniso_0.0_lseg=1.0"
     gaussians_path = f"{args.gaussian_path}/{case_name}/{exp_name}/point_cloud/iteration_10000/point_cloud.ply"
+    print("🟡 Load data_path =", f"{base_path}/{case_name}/final_data.pkl")
+    print("🟡 Load optimal_params =", optimal_path)
+    print("🟡 Load gaussian =", gaussians_path)
+    print("🟡 Load calibrate =", f"{base_path}/{case_name}/calibrate.pkl")
+    print("🟡 Load metadata =", f"{base_path}/{case_name}/metadata.json")
 
     logger.set_log_file(path=base_dir, name="inference_log")
     trainer = InvPhyTrainerWarp(
@@ -96,3 +101,5 @@ if __name__ == "__main__":
     trainer.interactive_playground(
         best_model_path, gaussians_path, args.n_ctrl_parts, args.inv_ctrl
     )
+
+
