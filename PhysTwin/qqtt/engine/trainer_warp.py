@@ -1,3 +1,5 @@
+# /workspace/PhysTwin/qqtt/engine/trainer_warp.py
+
 from qqtt.data import RealData, SimpleData
 from qqtt.utils import logger, visualize_pc, cfg
 from qqtt.model.diff_simulator import (
