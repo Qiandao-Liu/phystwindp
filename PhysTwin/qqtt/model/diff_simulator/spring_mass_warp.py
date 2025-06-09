@@ -44,25 +44,25 @@ class State:
         return self.wp_x.requires_grad
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def copy_vec3(data: wp.array(dtype=wp.vec3), origin: wp.array(dtype=wp.vec3)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def copy_int(data: wp.array(dtype=wp.int32), origin: wp.array(dtype=wp.int32)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def copy_float(data: wp.array(dtype=wp.float32), origin: wp.array(dtype=wp.float32)):
     tid = wp.tid()
     origin[tid] = data[tid]
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def set_control_points(
     num_substeps: int,
     original_control_point: wp.array(dtype=wp.vec3),
@@ -228,7 +228,7 @@ def loop(
     return valid_count, J_sum
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def update_potential_collision(
     x: wp.array(dtype=wp.vec3),
     masks: wp.array(dtype=wp.int32),
@@ -352,7 +352,7 @@ def integrate_ground_collision(
     v_new[tid] = v1
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def compute_distances(
     pred: wp.array(dtype=wp.vec3),
     gt: wp.array(dtype=wp.vec3),
@@ -367,7 +367,7 @@ def compute_distances(
         distances[i, j] = 1e6
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def compute_neigh_indices(
     distances: wp.array2d(dtype=float),
     neigh_indices: wp.array(dtype=wp.int32),
@@ -447,12 +447,12 @@ def compute_track_loss(
         wp.atomic_add(track_loss, 0, final_track_loss)
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def set_int(input: int, output: wp.array(dtype=wp.int32)):
     output[0] = input
 
 
-@wp.kernel(enable_backward=False)
+@wp.kernel(enable_backward=True)
 def update_acc(
     v1: wp.array(dtype=wp.vec3),
     v2: wp.array(dtype=wp.vec3),
@@ -804,6 +804,23 @@ class SpringMassSystemWarp:
             self.forward_graph = forward_capture.graph
         else:
             self.tape = wp.Tape()
+
+    def reset(self):
+        """
+        Reset the simulator to its initial state.
+        """
+        self.set_init_state(self.wp_init_vertices, self.wp_init_velocities)
+
+        # 重置 loss、状态缓存等
+        self.wp_states = []
+        for _ in range(self.num_substeps + 1):
+            state = State(self.wp_init_velocities, self.num_control_points)
+            self.wp_states.append(state)
+
+        if hasattr(self, "tape"):
+            self.tape.reset()
+        self.clear_loss()
+
 
     def set_controller_target(self, frame_idx, pure_inference=False):
         if self.controller_points is not None:

@@ -473,6 +473,10 @@ class InvPhyTrainerWarp:
 
         wandb.finish()
 
+    def reset(self):
+        if hasattr(self, "simulator"):
+            self.simulator.reset()
+
     def test(self, model_path=None):
         if model_path is not None:
             # Load the model

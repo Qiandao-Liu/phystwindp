@@ -1,5 +1,4 @@
 # /workspace/src/env/phystwin_env.py
-
 import numpy as np
 import torch
 from PhysTwin.qqtt.engine.trainer_warp import InvPhyTrainerWarp
@@ -7,17 +6,22 @@ from PhysTwin.qqtt.utils import cfg
 import pickle, json, os
 
 class PhysTwinEnv:
-    def __init__(self, case_name="double_lift_cloth_1", base_path="./data/different_types", gaussian_path="./gaussian_output", pure_inference=True):
+    def __init__(self,
+                case_name="double_lift_cloth_1",
+                base_path=os.path.join(os.path.dirname(__file__), "../../PhysTwin/data/different_types"),
+                gaussian_path=os.path.join(os.path.dirname(__file__), "../../PhysTwin/gaussian_output"),
+                pure_inference=True):
         self.case_name = case_name
         self.base_path = base_path
         self.gaussian_path = gaussian_path
         self.pure_inference = pure_inference
 
         # ======== Load config based on task =========
+        config_path = os.path.join(os.path.dirname(__file__), "../../PhysTwin/configs")
         if "cloth" in case_name or "package" in case_name:
-            cfg.load_from_yaml("configs/cloth.yaml")
+            cfg.load_from_yaml(os.path.join(config_path, "cloth.yaml"))
         else:
-            cfg.load_from_yaml("configs/real.yaml")
+            cfg.load_from_yaml(os.path.join(config_path, "real.yaml"))
 
         self._load_camera_calibration()
         self._load_optimal_params()
@@ -47,26 +51,48 @@ class PhysTwinEnv:
         cfg.WH = data["WH"]
 
     def _load_optimal_params(self):
-        optimal_path = f"./experiments_optimization/{self.case_name}/optimal_params.pkl"
+        optimal_path = os.path.join(os.path.dirname(__file__), f"../../PhysTwin/experiments_optimization/{self.case_name}/optimal_params.pkl")
         assert os.path.exists(optimal_path), f"Missing: {optimal_path}"
         with open(optimal_path, "rb") as f:
             optimal_params = pickle.load(f)
         cfg.set_optimal_params(optimal_params)
 
-    def reset(self, init_ctrl_pts=None, init_obj_pts=None):
-        # Load from data if not provided
+    """
+    Randomly select an init state:
+    obs = env.reset(init_idx=17)
+    """
+    # def reset(self, init_idx=0, init_ctrl_pts=None, init_obj_pts=None):
+    #     if init_ctrl_pts is None or init_obj_pts is None:
+    #         init_ctrl_pts = self.trainer.controller_points[0]  # shape: (30, 3)
+    #         init_obj_pts = self.trainer.object_points[0]       # shape: (4742, 3)
+    #     print("🔵 controller_points_shape:", init_ctrl_pts.shape)
+    #     print("🔴 object_points_shape:", init_obj_pts.shape)
+
+    #     self.ctrl_pts = init_ctrl_pts
+    #     self.gs_pts = init_obj_pts
+    #     self.sim.set_init_state_from_numpy(self.ctrl_pts, self.gs_pts)
+    #     self.step_id = 0
+
+    #     return self.get_obs()
+
+    def reset(self, init_idx=0, init_ctrl_pts=None, init_obj_pts=None):
+        self.trainer.reset()
+        self.step_id = 0
+
         if init_ctrl_pts is None or init_obj_pts is None:
-            ctrl_all = self.trainer.ctrl_points_all
-            obj_all = self.trainer.gs_points_all
-            init_ctrl_pts = ctrl_all[0]
-            init_obj_pts = obj_all[0]
+            init_ctrl_pts = self.trainer.controller_points[0]  # shape: (30, 3)
+            init_obj_pts = self.trainer.object_points[0]       # shape: (4742, 3)
+        print("🔵 controller_points_shape:", init_ctrl_pts.shape)
+        print("🔴 object_points_shape:", init_obj_pts.shape)
 
         self.ctrl_pts = init_ctrl_pts
         self.gs_pts = init_obj_pts
-        self.sim.set_init_state_from_numpy(self.ctrl_pts, self.gs_pts)
-        self.step_id = 0
 
-        return self.get_obs()
+        obs = {
+            "ctrl_pts": self.ctrl_pts,
+            "gs_pts": self.gs_pts,
+        }
+        return obs
 
     def step(self, delta_ctrl):
         # Apply delta and step physics
