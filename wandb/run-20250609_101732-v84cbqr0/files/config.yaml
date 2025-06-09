@@ -1,0 +1,115 @@
+_wandb:
+    value:
+        cli_version: 0.19.9
+        m: []
+        python_version: 3.10.16
+        t:
+            "1":
+                - 1
+                - 5
+                - 41
+                - 49
+                - 53
+                - 55
+                - 71
+                - 79
+            "2":
+                - 1
+                - 5
+                - 41
+                - 49
+                - 53
+                - 55
+                - 71
+                - 79
+            "3":
+                - 13
+                - 16
+                - 23
+                - 55
+            "4": 3.10.16
+            "5": 0.19.9
+            "8":
+                - 5
+            "12": 0.19.9
+            "13": linux-x86_64
+FPS:
+    value: 30
+acc_weight:
+    value: 0.01
+base_dir:
+    value: ./temp_experiments/double_lift_cloth_1
+base_lr:
+    value: 0.001
+chamfer_weight:
+    value: 1
+collide_elas:
+    value: 0.5
+collide_fric:
+    value: 0.3
+collide_object_elas:
+    value: 0.7
+collide_object_fric:
+    value: 0.3
+collision_dist:
+    value: 0.06
+collision_learn:
+    value: true
+controller_max_neighbours:
+    value: 50
+controller_radius:
+    value: 0.04
+dashpot_damping:
+    value: 100
+data_path:
+    value: /home/qiandaoliu/workspace/src/env/../../PhysTwin/data/different_types/double_lift_cloth_1/final_data.pkl
+data_type:
+    value: real
+device:
+    value: cuda:0
+drag_damping:
+    value: 3
+dt:
+    value: 5e-05
+init_spring_Y:
+    value: 3000
+iterations:
+    value: 250
+num_substeps:
+    value: 667
+object_max_neighbours:
+    value: 30
+object_radius:
+    value: 0.02
+overlay_path:
+    value: null
+reverse_z:
+    value: true
+run_name:
+    value: double_lift_cloth_1
+self_collision:
+    value: false
+spring_Y_max:
+    value: 100000
+spring_Y_min:
+    value: 0
+track_weight:
+    value: 1
+train_frame:
+    value: null
+use_graph:
+    value: true
+vis_interval:
+    value: 10
+vp_front:
+    value:
+        - 1
+        - 0
+        - -2
+vp_up:
+    value:
+        - 0
+        - 0
+        - -1
+vp_zoom:
+    value: 1

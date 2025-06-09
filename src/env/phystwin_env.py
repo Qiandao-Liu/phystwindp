@@ -10,7 +10,7 @@ class PhysTwinEnv:
                 case_name="double_lift_cloth_1",
                 base_path=os.path.join(os.path.dirname(__file__), "../../PhysTwin/data/different_types"),
                 gaussian_path=os.path.join(os.path.dirname(__file__), "../../PhysTwin/gaussian_output"),
-                pure_inference=True):
+                pure_inference=False):
         self.case_name = case_name
         self.base_path = base_path
         self.gaussian_path = gaussian_path

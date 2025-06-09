@@ -1,0 +1,43 @@
+🔵 controller_points_shape: torch.Size([30, 3])
+🔴 object_points_shape: torch.Size([4742, 3])
+✅ Initial obs: {'ctrl_pts': torch.Size([30, 3]), 'gs_pts': torch.Size([4742, 3])}
+[Render] Step 1 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 000 | Δgs mean: 0.000000
+[Render] Step 11 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 010 | Δgs mean: 0.000000
+[Render] Step 21 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 020 | Δgs mean: 0.000000
+[Render] Step 31 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 030 | Δgs mean: 0.000000
+[Render] Step 41 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 040 | Δgs mean: 0.000000
+[Render] Step 51 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 050 | Δgs mean: 0.000000
+[Render] Step 61 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 060 | Δgs mean: 0.000000
+[Render] Step 71 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 070 | Δgs mean: 0.000000
+[Render] Step 81 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 080 | Δgs mean: 0.000000
+[Render] Step 91 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 090 | Δgs mean: 0.000000
+[Render] Step 101 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 100 | Δgs mean: 0.000000
+[Render] Step 111 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 110 | Δgs mean: 0.000000
+[Render] Step 121 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 120 | Δgs mean: 0.000000
+[Render] Step 131 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 130 | Δgs mean: 0.000000
+[Render] Step 141 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 140 | Δgs mean: 0.000000
+[Render] Step 151 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 150 | Δgs mean: 0.000000
+[Render] Step 161 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 160 | Δgs mean: 0.000000
+[Render] Step 171 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 170 | Δgs mean: 0.000000
+[Render] Step 181 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 180 | Δgs mean: 0.000000
+[Render] Step 191 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+🔍 Step 190 | Δgs mean: 0.000000

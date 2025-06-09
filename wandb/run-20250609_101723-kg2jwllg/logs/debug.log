@@ -1,0 +1,23 @@
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_setup.py:_flush():67] Current SDK version is 0.19.9
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_setup.py:_flush():67] Configure stats pid to 26599
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_setup.py:_flush():67] Loading settings from /home/qiandaoliu/.config/wandb/settings
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_setup.py:_flush():67] Loading settings from /home/qiandaoliu/workspace/wandb/settings
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_setup.py:_flush():67] Loading settings from environment variables
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:setup_run_log_directory():662] Logging user logs to /home/qiandaoliu/workspace/wandb/run-20250609_101723-kg2jwllg/logs/debug.log
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:setup_run_log_directory():663] Logging internal logs to /home/qiandaoliu/workspace/wandb/run-20250609_101723-kg2jwllg/logs/debug-internal.log
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:init():781] calling init triggers
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:init():786] wandb.init called with sweep_config: {}
+config: {'FPS': 30, 'acc_weight': 0.01, 'base_dir': './temp_experiments/double_lift_cloth_1', 'base_lr': 0.001, 'chamfer_weight': 1.0, 'collide_elas': 0.5, 'collide_fric': 0.3, 'collide_object_elas': 0.7, 'collide_object_fric': 0.3, 'collision_dist': 0.06, 'collision_learn': True, 'controller_max_neighbours': 50, 'controller_radius': 0.04, 'dashpot_damping': 100, 'data_path': '/home/qiandaoliu/workspace/src/env/../../PhysTwin/data/different_types/double_lift_cloth_1/final_data.pkl', 'data_type': 'real', 'device': 'cuda:0', 'drag_damping': 3, 'dt': 5e-05, 'init_spring_Y': 3000.0, 'iterations': 250, 'num_substeps': 667, 'object_max_neighbours': 30, 'object_radius': 0.02, 'overlay_path': None, 'reverse_z': True, 'run_name': 'double_lift_cloth_1', 'self_collision': False, 'spring_Y_max': 100000.0, 'spring_Y_min': 0, 'track_weight': 1.0, 'train_frame': None, 'use_graph': True, 'vis_interval': 10, 'vp_front': [1, 0, -2], 'vp_up': [0, 0, -1], 'vp_zoom': 1, '_wandb': {}}
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:init():809] starting backend
+2025-06-09 10:17:23,078 INFO    MainThread:26599 [wandb_init.py:init():813] sending inform_init request
+2025-06-09 10:17:23,079 INFO    MainThread:26599 [backend.py:_multiprocessing_setup():101] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2025-06-09 10:17:23,079 INFO    MainThread:26599 [wandb_init.py:init():823] backend started and connected
+2025-06-09 10:17:23,080 INFO    MainThread:26599 [wandb_init.py:init():915] updated telemetry
+2025-06-09 10:17:23,082 INFO    MainThread:26599 [wandb_init.py:init():939] communicating run to backend with 90.0 second timeout
+2025-06-09 10:17:23,444 INFO    MainThread:26599 [wandb_init.py:init():1014] starting run threads in backend
+2025-06-09 10:17:23,506 INFO    MainThread:26599 [wandb_run.py:_console_start():2454] atexit reg
+2025-06-09 10:17:23,506 INFO    MainThread:26599 [wandb_run.py:_redirect():2306] redirect: wrap_raw
+2025-06-09 10:17:23,506 INFO    MainThread:26599 [wandb_run.py:_redirect():2371] Wrapping output streams.
+2025-06-09 10:17:23,506 INFO    MainThread:26599 [wandb_run.py:_redirect():2394] Redirects installed.
+2025-06-09 10:17:23,507 INFO    MainThread:26599 [wandb_init.py:init():1056] run started, returning control to user process
+2025-06-09 10:17:24,711 INFO    MsgRouterThr:26599 [mailbox.py:close():129] [no run ID] Closing mailbox, abandoning 1 handles.

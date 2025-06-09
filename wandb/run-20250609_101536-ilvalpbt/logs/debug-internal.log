@@ -1,0 +1,15 @@
+{"time":"2025-06-09T10:15:36.539476979-04:00","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/qiandaoliu/workspace/wandb/run-20250609_101536-ilvalpbt/logs/debug-core.log"}
+{"time":"2025-06-09T10:15:36.849530587-04:00","level":"INFO","msg":"created new stream","id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:36.849555827-04:00","level":"INFO","msg":"stream: started","id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:36.849617996-04:00","level":"INFO","msg":"writer: Do: started","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:36.849626916-04:00","level":"INFO","msg":"handler: started","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:36.849632666-04:00","level":"INFO","msg":"sender: started","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:37.040560507-04:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-06-09T10:15:45.330297233-04:00","level":"INFO","msg":"stream: closing","id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:45.330316333-04:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-06-09T10:15:45.330338343-04:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-06-09T10:15:45.700821332-04:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-06-09T10:15:45.880098699-04:00","level":"INFO","msg":"handler: closed","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:45.880114709-04:00","level":"INFO","msg":"writer: Close: closed","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:45.880122799-04:00","level":"INFO","msg":"sender: closed","stream_id":"ilvalpbt"}
+{"time":"2025-06-09T10:15:45.880146569-04:00","level":"INFO","msg":"stream: closed","id":"ilvalpbt"}

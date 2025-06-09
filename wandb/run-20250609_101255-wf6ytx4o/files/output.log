@@ -1,0 +1,13 @@
+🔵 controller_points_shape: torch.Size([30, 3])
+🔴 object_points_shape: torch.Size([4742, 3])
+✅ Initial obs: {'ctrl_pts': torch.Size([30, 3]), 'gs_pts': torch.Size([4742, 3])}
+[Render] Step 1 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 2 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 3 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 4 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 5 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115

@@ -1,0 +1,11 @@
+🔵 controller_points_shape: torch.Size([30, 3])
+🔴 object_points_shape: torch.Size([4742, 3])
+✅ Initial obs: {'ctrl_pts': torch.Size([30, 3]), 'gs_pts': torch.Size([4742, 3])}
+Traceback (most recent call last):
+  File "/home/qiandaoliu/workspace/src/env/env_testment/forward_move_test.py", line 18, in <module>
+    delta_dir = delta_dir.expand(30, 3)  # shape: (30, 3)
+RuntimeError: expand(torch.FloatTensor{[1, 1, 3]}, size=[30, 3]): the number of sizes provided (2) must be greater or equal to the number of dimensions in the tensor (3)
+Traceback (most recent call last):
+  File "/home/qiandaoliu/workspace/src/env/env_testment/forward_move_test.py", line 18, in <module>
+    delta_dir = delta_dir.expand(30, 3)  # shape: (30, 3)
+RuntimeError: expand(torch.FloatTensor{[1, 1, 3]}, size=[30, 3]): the number of sizes provided (2) must be greater or equal to the number of dimensions in the tensor (3)

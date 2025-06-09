@@ -1,0 +1,403 @@
+🔵 controller_points_shape: torch.Size([30, 3])
+🔴 object_points_shape: torch.Size([4742, 3])
+✅ Initial obs: {'ctrl_pts': torch.Size([30, 3]), 'gs_pts': torch.Size([4742, 3])}
+[Render] Step 1 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 2 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 3 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 4 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 5 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 6 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 7 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 8 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 9 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 10 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 11 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 12 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 13 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 14 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 15 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 16 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 17 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 18 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 19 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 20 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 21 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 22 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 23 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 24 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 25 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 26 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 27 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 28 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 29 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 30 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 31 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 32 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 33 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 34 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0774 | Mean obj pos: 0.0115
+[Render] Step 35 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0774 | Mean obj pos: 0.0115
+[Render] Step 36 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 37 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0774 | Mean obj pos: 0.0115
+[Render] Step 38 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0773 | Mean obj pos: 0.0115
+[Render] Step 39 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0773 | Mean obj pos: 0.0115
+[Render] Step 40 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0773 | Mean obj pos: 0.0115
+[Render] Step 41 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0773 | Mean obj pos: 0.0115
+[Render] Step 42 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 43 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 44 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 45 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 46 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 47 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 48 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 49 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 50 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 51 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 52 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 53 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 54 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 55 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 56 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 57 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 58 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 59 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 60 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 61 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 62 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 63 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 64 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 65 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 66 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 67 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 68 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 69 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 70 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 71 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 72 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 73 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 74 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 75 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 76 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 77 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 78 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 79 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 80 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 81 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 82 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 83 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 84 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 85 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 86 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 87 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 88 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 89 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 90 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 91 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 92 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 93 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 94 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0783 | Mean obj pos: 0.0115
+[Render] Step 95 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 96 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 97 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 98 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 99 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 100 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 101 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 102 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 103 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 104 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 105 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 106 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0782 | Mean obj pos: 0.0115
+[Render] Step 107 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 108 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 109 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 110 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 111 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 112 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 113 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 114 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 115 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 116 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 117 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 118 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 119 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 120 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 121 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 122 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 123 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 124 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 125 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 126 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0775 | Mean obj pos: 0.0115
+[Render] Step 127 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 128 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 129 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 130 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 131 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 132 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 133 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 134 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 135 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 136 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 137 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 138 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 139 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 140 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 141 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 142 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 143 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 144 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 145 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 146 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 147 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 148 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 149 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 150 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 151 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 152 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0776 | Mean obj pos: 0.0115
+[Render] Step 153 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0777 | Mean obj pos: 0.0115
+[Render] Step 154 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 155 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0778 | Mean obj pos: 0.0115
+[Render] Step 156 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0779 | Mean obj pos: 0.0115
+[Render] Step 157 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0780 | Mean obj pos: 0.0115
+[Render] Step 158 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0781 | Mean obj pos: 0.0115
+[Render] Step 159 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0784 | Mean obj pos: 0.0115
+[Render] Step 160 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 161 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0787 | Mean obj pos: 0.0115
+[Render] Step 162 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 163 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0786 | Mean obj pos: 0.0115
+[Render] Step 164 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0785 | Mean obj pos: 0.0115
+[Render] Step 165 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0788 | Mean obj pos: 0.0115
+[Render] Step 166 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0789 | Mean obj pos: 0.0115
+[Render] Step 167 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 168 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 169 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 170 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 171 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 172 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 173 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 174 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0794 | Mean obj pos: 0.0115
+[Render] Step 175 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0792 | Mean obj pos: 0.0115
+[Render] Step 176 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 177 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 178 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 179 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0789 | Mean obj pos: 0.0115
+[Render] Step 180 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 181 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 182 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 183 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 184 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0792 | Mean obj pos: 0.0115
+[Render] Step 185 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 186 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0792 | Mean obj pos: 0.0115
+[Render] Step 187 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 188 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 189 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 190 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 191 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 192 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0789 | Mean obj pos: 0.0115
+[Render] Step 193 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 194 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0790 | Mean obj pos: 0.0115
+[Render] Step 195 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0791 | Mean obj pos: 0.0115
+[Render] Step 196 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0792 | Mean obj pos: 0.0115
+[Render] Step 197 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 198 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0793 | Mean obj pos: 0.0115
+[Render] Step 199 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0792 | Mean obj pos: 0.0115
+[Render] Step 200 | ctrl shape: torch.Size([30, 3]) | obj shape: torch.Size([4742, 3])
+   Mean ctrl pos: -0.0794 | Mean obj pos: 0.0115
