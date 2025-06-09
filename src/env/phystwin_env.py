@@ -95,10 +95,11 @@ class PhysTwinEnv:
         return obs
 
     def step(self, delta_ctrl):
+        print("✅ sim has methods:", dir(self.sim))
         # Apply delta and step physics
         self.step_id += 1
         self.sim.step_ctrl(delta_ctrl)
-        self.ctrl_pts = self.sim.get_ctrl_pts()
+        self.ctrl_pts = self.sim.get_control_points()
         self.gs_pts = self.sim.get_obj_pts()
         return self.get_obs()
 

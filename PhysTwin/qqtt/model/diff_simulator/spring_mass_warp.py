@@ -3,6 +3,7 @@
 import torch
 from qqtt.utils import logger, cfg
 import warp as wp
+import numpy as np
 
 wp.init()
 wp.set_device("cuda:0")
@@ -805,13 +806,16 @@ class SpringMassSystemWarp:
         else:
             self.tape = wp.Tape()
 
+    """
+    Add some Functions in spring_mass_warp.py
+    """
     def reset(self):
         """
         Reset the simulator to its initial state.
         """
         self.set_init_state(self.wp_init_vertices, self.wp_init_velocities)
 
-        # 重置 loss、状态缓存等
+        # Reset Status
         self.wp_states = []
         for _ in range(self.num_substeps + 1):
             state = State(self.wp_init_velocities, self.num_control_points)
@@ -821,6 +825,27 @@ class SpringMassSystemWarp:
             self.tape.reset()
         self.clear_loss()
 
+    def get_control_points(self):
+        return wp.to_torch(self.wp_target_control_point).detach().clone().cpu()
+    
+    def get_obj_pts(self):
+        return wp.to_torch(self.wp_current_object_points).detach().clone().cpu()
+
+    def set_control_points(self, ctrl_pts):
+        assert isinstance(ctrl_pts, np.ndarray) or isinstance(ctrl_pts, torch.Tensor)
+        if isinstance(ctrl_pts, np.ndarray):
+            ctrl_pts = torch.from_numpy(ctrl_pts).float()
+        ctrl_pts = ctrl_pts.to(self.device)
+        self.wp_target_control_point = ctrl_pts.clone()
+
+    '''
+    Step Forward
+    '''
+    def step_ctrl(self, delta_ctrl):
+        cur_ctrl = self.get_control_points()
+        new_ctrl = cur_ctrl + delta_ctrl
+        self.set_control_points(new_ctrl)
+        self.step()
 
     def set_controller_target(self, frame_idx, pure_inference=False):
         if self.controller_points is not None:
