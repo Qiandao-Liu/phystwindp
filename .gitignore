@@ -31,3 +31,9 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# keep wandb settings but ignore runs
+wandb/run-*/
+wandb/debug.log
+wandb/debug-internal.log
+wandb/latest-run
