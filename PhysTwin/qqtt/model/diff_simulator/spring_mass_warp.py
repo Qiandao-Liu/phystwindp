@@ -828,8 +828,12 @@ class SpringMassSystemWarp:
     def get_control_points(self):
         return wp.to_torch(self.wp_target_control_point).detach().clone().cpu()
     
+    # def get_obj_pts(self):
+    #     return wp.to_torch(self.wp_current_object_points).detach().clone().cpu()
+
     def get_obj_pts(self):
-        return wp.to_torch(self.wp_current_object_points).detach().clone().cpu()
+        return wp.to_torch(self.wp_states[-1].wp_x).detach().clone().cpu()
+
 
     def set_control_points(self, ctrl_pts):
         assert isinstance(ctrl_pts, np.ndarray) or isinstance(ctrl_pts, torch.Tensor)

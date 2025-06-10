@@ -81,7 +81,6 @@ class PhysTwinEnv:
         return obs
 
     def step(self, delta_ctrl):
-        # print("✅ sim has methods:", dir(self.sim))
         # Apply delta and step physics
         self.step_id += 1
         self.sim.step_ctrl(delta_ctrl)
