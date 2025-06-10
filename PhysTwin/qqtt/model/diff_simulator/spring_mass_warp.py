@@ -853,6 +853,7 @@ class SpringMassSystemWarp:
         new_ctrl = cur_ctrl + delta_ctrl
         self.set_control_points(new_ctrl)
         self.step()
+        # print("🟢 inside spring_mass_warp.step_ctrl(), ctrl delta mean:", delta_ctrl.norm(dim=1).mean().item())
 
     def set_controller_target(self, frame_idx, pure_inference=False):
         if self.controller_points is not None:

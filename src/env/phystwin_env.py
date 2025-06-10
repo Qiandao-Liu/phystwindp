@@ -58,23 +58,9 @@ class PhysTwinEnv:
         cfg.set_optimal_params(optimal_params)
 
     """
-    Randomly select an init state:
+    To randomly select an init state:
     obs = env.reset(init_idx=17)
     """
-    # def reset(self, init_idx=0, init_ctrl_pts=None, init_obj_pts=None):
-    #     if init_ctrl_pts is None or init_obj_pts is None:
-    #         init_ctrl_pts = self.trainer.controller_points[0]  # shape: (30, 3)
-    #         init_obj_pts = self.trainer.object_points[0]       # shape: (4742, 3)
-    #     print("🔵 controller_points_shape:", init_ctrl_pts.shape)
-    #     print("🔴 object_points_shape:", init_obj_pts.shape)
-
-    #     self.ctrl_pts = init_ctrl_pts
-    #     self.gs_pts = init_obj_pts
-    #     self.sim.set_init_state_from_numpy(self.ctrl_pts, self.gs_pts)
-    #     self.step_id = 0
-
-    #     return self.get_obs()
-
     def reset(self, init_idx=0, init_ctrl_pts=None, init_obj_pts=None):
         self.trainer.reset()
         self.step_id = 0
