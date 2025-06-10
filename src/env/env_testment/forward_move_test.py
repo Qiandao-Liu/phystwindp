@@ -19,7 +19,7 @@ delta_mag = 0.005
 
 delta = delta_dir * delta_mag
 
-for i in range(200):
+for i in range(50):
     obs = env.step(delta)
 
     if i % 10 == 0:

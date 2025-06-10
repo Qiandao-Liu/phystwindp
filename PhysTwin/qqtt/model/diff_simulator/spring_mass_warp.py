@@ -831,19 +831,13 @@ class SpringMassSystemWarp:
     def get_obj_pts(self):
         return wp.to_torch(self.wp_current_object_points).detach().clone().cpu()
 
-    # def set_control_points(self, ctrl_pts):
-    #     assert isinstance(ctrl_pts, np.ndarray) or isinstance(ctrl_pts, torch.Tensor)
-    #     if isinstance(ctrl_pts, np.ndarray):
-    #         ctrl_pts = torch.from_numpy(ctrl_pts).float()
-    #     ctrl_pts = ctrl_pts.to(self.device)
-    #     self.wp_target_control_point = ctrl_pts.clone()
-
     def set_control_points(self, ctrl_pts):
         assert isinstance(ctrl_pts, np.ndarray) or isinstance(ctrl_pts, torch.Tensor)
         if isinstance(ctrl_pts, np.ndarray):
             ctrl_pts = torch.from_numpy(ctrl_pts).float()
         ctrl_pts = ctrl_pts.to(self.device).float()  # Force to float32
-        self.wp_target_control_point = wp.from_torch(ctrl_pts, dtype=wp.vec3, requires_grad=True)  # ← dtype
+        self.wp_target_control_point = wp.from_torch(ctrl_pts, dtype=wp.vec3, requires_grad=True)
+        # 将 PyTorch 的控制点数据转换为 Warp（wp）的 vec3 数组（表示 3D 向量），并赋值给模拟器的 wp_target_control_point
 
     '''
     Step Forward
@@ -855,6 +849,20 @@ class SpringMassSystemWarp:
         self.step()
         # print("🟢 inside spring_mass_warp.step_ctrl(), ctrl delta mean:", delta_ctrl.norm(dim=1).mean().item())
 
+
+    """
+    设置模拟中目标控制点位置 以及当前目标帧的GS点位置 用于数据拟合或loss计算。
+
+    参数：
+    - frame_idx: 当前帧编号(用于从预加载的数据中索引控制点和GS点)
+    - pure_inference: 如果为 True 表示是纯推理 不设置GS目标 只设置控制点 
+
+    主要操作：
+    - 将上一帧控制点设置为 `wp_original_control_point`，当前帧设置为 `wp_target_control_point`
+    - 如果不是纯推理模式，还会设置当前帧的 `gt_object_points` 作为 `wp_current_object_points`
+      这可以用于计算 loss 例如 Chamfer 
+    - 如果是 real 数据，还会设置 visibility 和 motion_validity 信息
+    """
     def set_controller_target(self, frame_idx, pure_inference=False):
         if self.controller_points is not None:
             # Set the controller points
@@ -917,7 +925,18 @@ class SpringMassSystemWarp:
             inputs=[controller_interactive],
             outputs=[self.wp_target_control_point],
         )
+    
+    """
+    重置模拟器状态（粒子位置和速度），用于 `env.reset()` 或从某一状态回放。
 
+    参数：
+    - wp_x: 初始化粒子位置 wp.array of vec3 
+    - wp_v: 初始化粒子速度
+    - pure_inference: 如果为 True 则直接使用原始张量，否则 clone 一份并设置 requires_grad=False
+
+    说明：
+    - 这会直接写入状态列表 `self.wp_states[0]`，作为 simulation 初始状态
+    """
     def set_init_state(self, wp_x, wp_v, pure_inference=False):
         # Detach and clone and set requires_grad=True
         assert (
@@ -993,22 +1012,26 @@ class SpringMassSystemWarp:
 
     def step(self):
         for i in range(self.num_substeps):
+            # print(f"🔁 Substep {i}")
+            # 清空当前子步的所有外力
             self.wp_states[i].clear_forces()
+
+            # 设置控制点位置：从 original -> target 做线性插值
             if not self.controller_points is None:
                 # Set the control point
                 wp.launch(
                     set_control_points,
                     dim=self.num_control_points,
                     inputs=[
-                        self.num_substeps,
-                        self.wp_original_control_point,
-                        self.wp_target_control_point,
-                        i,
+                        self.num_substeps,                   # 总子步数量
+                        self.wp_original_control_point,      # 起始控制点
+                        self.wp_target_control_point,        # 目标控制点
+                        i,                                   # 当前子步编号
                     ],
-                    outputs=[self.wp_states[i].wp_control_x],
+                    outputs=[self.wp_states[i].wp_control_x],  # 输出的插值控制点位置
                 )
 
-            # Calculate the spring forces
+            # 计算所有 spring 的弹力（包括控制点弹簧和物体内部弹簧）
             wp.launch(
                 kernel=eval_springs,
                 dim=self.n_springs,
@@ -1028,6 +1051,7 @@ class SpringMassSystemWarp:
                 outputs=[self.wp_states[i].wp_vertice_forces],
             )
 
+            # 判断是否启用物体碰撞：确定速度更新的输出位置
             if self.object_collision_flag:
                 output_v = self.wp_states[i].wp_v_before_collision
             else:
