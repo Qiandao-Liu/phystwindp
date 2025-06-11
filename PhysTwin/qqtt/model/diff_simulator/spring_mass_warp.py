@@ -844,7 +844,7 @@ class SpringMassSystemWarp:
         # 将 PyTorch 的控制点数据转换为 Warp（wp）的 vec3 数组（表示 3D 向量），并赋值给模拟器的 wp_target_control_point
 
     '''
-    Step Forward
+    One Step Forward
     '''
     def step_ctrl(self, delta_ctrl):
         cur_ctrl = self.get_control_points()
