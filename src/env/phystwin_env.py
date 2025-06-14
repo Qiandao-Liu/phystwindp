@@ -20,6 +20,7 @@ class PhysTwinEnv:
         config_path = os.path.join(os.path.dirname(__file__), "../../PhysTwin/configs")
         if "cloth" in case_name or "package" in case_name:
             cfg.load_from_yaml(os.path.join(config_path, "cloth.yaml"))
+            print()
         else:
             cfg.load_from_yaml(os.path.join(config_path, "real.yaml"))
 
