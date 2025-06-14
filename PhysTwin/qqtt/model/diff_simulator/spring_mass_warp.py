@@ -828,9 +828,6 @@ class SpringMassSystemWarp:
     def get_control_points(self):
         return wp.to_torch(self.wp_target_control_point).detach().clone().cpu()
     
-    # def get_obj_pts(self):
-    #     return wp.to_torch(self.wp_current_object_points).detach().clone().cpu()
-
     def get_obj_pts(self):
         return wp.to_torch(self.wp_states[-1].wp_x).detach().clone().cpu()
 
@@ -853,20 +850,39 @@ class SpringMassSystemWarp:
         self.step()
         # print("🟢 inside spring_mass_warp.step_ctrl(), ctrl delta mean:", delta_ctrl.norm(dim=1).mean().item())
 
-
     """
-    设置模拟中目标控制点位置 以及当前目标帧的GS点位置 用于数据拟合或loss计算。
-
-    参数：
-    - frame_idx: 当前帧编号(用于从预加载的数据中索引控制点和GS点)
-    - pure_inference: 如果为 True 表示是纯推理 不设置GS目标 只设置控制点 
-
-    主要操作：
-    - 将上一帧控制点设置为 `wp_original_control_point`，当前帧设置为 `wp_target_control_point`
-    - 如果不是纯推理模式，还会设置当前帧的 `gt_object_points` 作为 `wp_current_object_points`
-      这可以用于计算 loss 例如 Chamfer 
-    - 如果是 real 数据，还会设置 visibility 和 motion_validity 信息
+    Set Init State from dataset
     """
+    def set_init_state_from_numpy(self, ctrl_pts, obj_pts):
+        """
+        Set both control points and object points as the new initial state.
+        `ctrl_pts`: (N, 3) numpy or torch
+        `obj_pts`:  (M, 3) numpy or torch
+        """
+        assert isinstance(ctrl_pts, (np.ndarray, torch.Tensor))
+        assert isinstance(obj_pts, (np.ndarray, torch.Tensor))
+
+        if isinstance(ctrl_pts, np.ndarray):
+            ctrl_pts = torch.from_numpy(ctrl_pts).float()
+        if isinstance(obj_pts, np.ndarray):
+            obj_pts = torch.from_numpy(obj_pts).float()
+
+        ctrl_pts = ctrl_pts.to(self.device)
+        obj_pts = obj_pts.to(self.device)
+
+        # Set the target control points
+        self.wp_target_control_point = wp.from_torch(ctrl_pts, dtype=wp.vec3, requires_grad=True)
+
+        # Set initial positions
+        self.wp_init_vertices = wp.from_torch(obj_pts, dtype=wp.vec3, requires_grad=True)
+
+        # Set initial velocities to zero
+        zero_vel = torch.zeros_like(obj_pts).to(self.device)
+        self.wp_init_velocities = wp.from_torch(zero_vel, dtype=wp.vec3, requires_grad=True)
+
+        # Reset the simulator state based on new init values
+        self.reset()
+
     def set_controller_target(self, frame_idx, pure_inference=False):
         if self.controller_points is not None:
             # Set the controller points

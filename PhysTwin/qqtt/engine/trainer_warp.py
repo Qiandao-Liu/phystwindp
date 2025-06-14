@@ -115,6 +115,7 @@ class InvPhyTrainerWarp:
             raise ValueError(f"Data type {cfg.data_type} not supported")
 
         # Initialize the vertices, springs, rest lengths and masses
+        # print("TrainerWarp Init the vertices, springs, rest lengths and masses")
         if self.controller_points is None:
             firt_frame_controller_points = None
         else:

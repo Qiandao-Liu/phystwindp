@@ -16,7 +16,7 @@ obs = env.reset()
 print("Initial obs:", {k: v.shape for k, v in obs.items()})
 
 delta_dir = torch.tensor([0, 0, 1], dtype=torch.float32).repeat(30, 1)  # (30, 3)
-delta_mag = 0.005
+delta_mag = 0.00
 
 delta = delta_dir * delta_mag
 

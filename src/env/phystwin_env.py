@@ -1,6 +1,7 @@
 # /workspace/src/env/phystwin_env.py
 import numpy as np
 import torch
+import glob
 from PhysTwin.qqtt.engine.trainer_warp import InvPhyTrainerWarp
 from PhysTwin.qqtt.utils import cfg
 import pickle, json, os
@@ -15,6 +16,8 @@ class PhysTwinEnv:
         self.base_path = base_path
         self.gaussian_path = gaussian_path
         self.pure_inference = pure_inference
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # ======== Load config based on task =========
         config_path = os.path.join(os.path.dirname(__file__), "../../PhysTwin/configs")
@@ -24,7 +27,7 @@ class PhysTwinEnv:
         else:
             cfg.load_from_yaml(os.path.join(config_path, "real.yaml"))
 
-        self._load_camera_calibration()
+        # self._load_camera_calibration()
         self._load_optimal_params()
 
         # ======== Construct simulator =========
@@ -35,21 +38,24 @@ class PhysTwinEnv:
         )
 
         self.sim = self.trainer.simulator
+
+        self._load_trained_model()
+
         self.ctrl_pts = None
         self.gs_pts = None
         self.step_id = 0
 
-    def _load_camera_calibration(self):
-        # Calibrate views (for rendering, optional)
-        with open(f"{self.base_path}/{self.case_name}/calibrate.pkl", "rb") as f:
-            c2ws = pickle.load(f)
-        w2cs = [np.linalg.inv(c2w) for c2w in c2ws]
-        cfg.c2ws = np.array(c2ws)
-        cfg.w2cs = np.array(w2cs)
-        with open(f"{self.base_path}/{self.case_name}/metadata.json", "r") as f:
-            data = json.load(f)
-        cfg.intrinsics = np.array(data["intrinsics"])
-        cfg.WH = data["WH"]
+    # def _load_camera_calibration(self):
+    #     # Calibrate views (for rendering, optional)
+    #     with open(f"{self.base_path}/{self.case_name}/calibrate.pkl", "rb") as f:
+    #         c2ws = pickle.load(f)
+    #     w2cs = [np.linalg.inv(c2w) for c2w in c2ws]
+    #     cfg.c2ws = np.array(c2ws)
+    #     cfg.w2cs = np.array(w2cs)
+    #     with open(f"{self.base_path}/{self.case_name}/metadata.json", "r") as f:
+    #         data = json.load(f)
+    #     cfg.intrinsics = np.array(data["intrinsics"])
+    #     cfg.WH = data["WH"]
 
     def _load_optimal_params(self):
         optimal_path = os.path.join(os.path.dirname(__file__), f"../../PhysTwin/experiments_optimization/{self.case_name}/optimal_params.pkl")
@@ -57,6 +63,26 @@ class PhysTwinEnv:
         with open(optimal_path, "rb") as f:
             optimal_params = pickle.load(f)
         cfg.set_optimal_params(optimal_params)
+
+
+    def _load_trained_model(self):
+        model_glob = os.path.join(os.path.dirname(__file__), f"../../PhysTwin/experiments/{self.case_name}/train/best_*.pth")
+        paths = sorted(glob.glob(model_glob))
+        assert len(paths) > 0, f"Cannot find any trained model at: {model_glob}"
+        best_model_path = paths[0]
+        print(f"✅ Loading trained model from {best_model_path}")
+        
+        checkpoint = torch.load(best_model_path, map_location=self.device)
+        self.sim.set_spring_Y(torch.log(checkpoint["spring_Y"]).detach().clone())
+        self.sim.set_collide(
+            checkpoint["collide_elas"].detach().clone(),
+            checkpoint["collide_fric"].detach().clone()
+        )
+        self.sim.set_collide_object(
+            checkpoint["collide_object_elas"].detach().clone(),
+            checkpoint["collide_object_fric"].detach().clone()
+        )
+
 
     """
     To randomly select an init state:
@@ -74,6 +100,9 @@ class PhysTwinEnv:
 
         self.ctrl_pts = init_ctrl_pts
         self.gs_pts = init_obj_pts
+
+        self.sim.set_init_state_from_numpy(self.ctrl_pts, self.gs_pts)
+
 
         obs = {
             "ctrl_pts": self.ctrl_pts,
@@ -96,7 +125,7 @@ class PhysTwinEnv:
         }
 
     def render(self):
-        # You can optionally add a pointcloud visualizer here
+        # optionally add a pointcloud visualizer here
         print(f"[Render] Step {self.step_id} | ctrl shape: {self.ctrl_pts.shape} | obj shape: {self.gs_pts.shape}")
 
     def get_state(self):
