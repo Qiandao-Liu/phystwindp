@@ -104,12 +104,12 @@ if __name__ == "__main__":
     def scripted_movement():
         trainer.reset()
         print("✅ GUI loaded. Running scripted movement using delta...")
-        for step_idx in range(100):
-            delta = np.zeros((30, 3), dtype=np.float32)
-            delta[:, 0] += 0.001  # Move along +x axis
+        for step_idx in range(50):
+            delta = np.zeros((2, 3), dtype=np.float32)
+            delta[0, 0] += 0.005
+            delta[1, 1] += 0.005
             trainer.step_queue.put(delta)
-            print(f"[Step {step_idx:03d}] Sent delta: {delta[0]}")
-            time.sleep(1 / 30.0)
+            print(f"[Step {step_idx:03d}] Sent delta: {delta}")
 
     threading.Thread(target=scripted_movement, daemon=True).start()
 

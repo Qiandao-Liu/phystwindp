@@ -975,21 +975,28 @@ class InvPhyTrainerWarp:
         print("🔄 Simulator has been reset and targets initialized.")
 
     def step(self, delta: np.ndarray):
-        """
-        Apply delta to control points and perform one simulation step.
-
-        Args:
-            delta (np.ndarray): Delta to apply to controller points (shape: n_ctrl x 3).
-        Returns:
-            torch.Tensor: Current state point cloud (N, 3)
-        """
         if isinstance(delta, np.ndarray):
             delta_tensor = torch.tensor(delta, dtype=torch.float32, device=cfg.device)
         else:
             delta_tensor = delta.to(cfg.device)
 
-        print(f"[📦 step()] Applying delta: {delta[0]}")
+        print(f"[📦 step()] Applying delta: {delta_tensor}")
+
         self.current_target += delta_tensor
+
+        self.simulator.set_controller_interactive(self.prev_target, self.current_target)
+
+        if self.simulator.object_collision_flag:
+            self.simulator.update_collision_graph()
+
+        wp.capture_launch(self.simulator.forward_graph)
+
+        self.simulator.set_init_state(
+            self.simulator.wp_states[-1].wp_x,
+            self.simulator.wp_states[-1].wp_v,
+        )
+
+        self.prev_target = self.current_target.clone()
 
 
     def interactive_playground(
