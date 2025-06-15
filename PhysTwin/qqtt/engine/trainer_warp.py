@@ -9,6 +9,7 @@ import open3d as o3d
 import numpy as np
 import torch
 import wandb
+import queue
 import os
 from tqdm import tqdm
 import warp as wp
@@ -73,6 +74,7 @@ class InvPhyTrainerWarp:
         print("📐 controller_points shape:", data['controller_points'].shape)
         print("📐 object_points shape:", data['object_points'].shape)
         print("📐 surface_points shape:", data['surface_points'].shape)
+        self.step_queue = queue.Queue()
                 
         self.init_masks = None
         self.init_velocities = None
@@ -952,6 +954,43 @@ class InvPhyTrainerWarp:
         min_dist_per_ctrl_pts, min_indices = torch.min(dist_matrix, dim=1)
         min_idx = min_indices[torch.argmin(min_dist_per_ctrl_pts)]
         return self.structure_points[min_idx].unsqueeze(0)
+    
+    def reset(self, init_ctrl: np.ndarray = None):
+        """
+        Reset the simulator to initial state and optionally set control points.
+        This can be called before using `step()` to simulate GUI or script-based interaction.
+
+        Args:
+            init_ctrl (np.ndarray): Optional array of shape (n_ctrl, 3) to override controller points.
+        """
+        self.simulator.reset()
+        init_ctrl = self.simulator.wp_states[-1].wp_control_x
+
+        init_ctrl = torch.tensor(init_ctrl, dtype=torch.float32, device=cfg.device)
+
+        self.prev_target = init_ctrl.clone()
+        self.current_target = init_ctrl.clone()
+        self.hand_left_pos = init_ctrl[0].clone()
+        self.hand_right_pos = init_ctrl[1].clone()
+        print("🔄 Simulator has been reset and targets initialized.")
+
+    def step(self, delta: np.ndarray):
+        """
+        Apply delta to control points and perform one simulation step.
+
+        Args:
+            delta (np.ndarray): Delta to apply to controller points (shape: n_ctrl x 3).
+        Returns:
+            torch.Tensor: Current state point cloud (N, 3)
+        """
+        if isinstance(delta, np.ndarray):
+            delta_tensor = torch.tensor(delta, dtype=torch.float32, device=cfg.device)
+        else:
+            delta_tensor = delta.to(cfg.device)
+
+        print(f"[📦 step()] Applying delta: {delta[0]}")
+        self.current_target += delta_tensor
+
 
     def interactive_playground(
         self, model_path, gs_path, n_ctrl_parts=1, inv_ctrl=False
@@ -996,10 +1035,11 @@ class InvPhyTrainerWarp:
         intrinsic = cfg.intrinsics[vis_cam_idx]
         w2c = cfg.w2cs[vis_cam_idx]
 
-        current_target = self.simulator.controller_points[0]
-        prev_target = current_target
-
-        vis_controller_points = current_target.cpu().numpy()
+        # current_target = self.simulator.controller_points[0]
+        # prev_target = current_target
+        self.current_target = self.simulator.controller_points[0].clone()
+        self.prev_target = self.current_target.clone()
+        vis_controller_points = self.current_target.cpu().numpy()
 
         gaussians = GaussianModel(sh_degree=3)
         gaussians.load_ply(gs_path)
@@ -1157,7 +1197,9 @@ class InvPhyTrainerWarp:
 
             sim_timer.start()
 
-            self.simulator.set_controller_interactive(prev_target, current_target)
+            # self.simulator.set_controller_interactive(prev_target, current_target)
+            self.simulator.set_controller_interactive(self.prev_target, self.current_target)
+
             if self.simulator.object_collision_flag:
                 self.simulator.update_collision_graph()
             wp.capture_launch(self.simulator.forward_graph)
@@ -1197,6 +1239,14 @@ class InvPhyTrainerWarp:
             component_times["rendering"].append(render_time)
 
             torch.cuda.synchronize()
+
+            # start add delta queue
+            try:
+                delta = self.step_queue.get_nowait()
+                self.step(delta)
+                print("[🎹 Automated Step] Executed delta", delta[0])
+            except queue.Empty:
+                pass
 
             # Continue frame compositing
             frame_timer.start()
@@ -1289,12 +1339,14 @@ class InvPhyTrainerWarp:
 
             prev_x = x.clone()
 
-            prev_target = current_target
+            # prev_target = current_target
+            self.prev_target = self.current_target.clone()
+
             target_change = self.get_target_change()
             if masks_ctrl_pts is not None:
                 for i in range(n_ctrl_parts):
                     if masks_ctrl_pts[i].sum() > 0:
-                        current_target[masks_ctrl_pts[i]] += torch.tensor(
+                        self.current_target[masks_ctrl_pts[i]] += torch.tensor(
                             target_change[i], dtype=torch.float32, device=cfg.device
                         )
                         if i == 0:
@@ -1306,7 +1358,7 @@ class InvPhyTrainerWarp:
                                 target_change[i], dtype=torch.float32, device=cfg.device
                             )
             else:
-                current_target += torch.tensor(
+                self.current_target += torch.tensor(
                     target_change, dtype=torch.float32, device=cfg.device
                 )
                 self.hand_left_pos += torch.tensor(
@@ -1322,39 +1374,39 @@ class InvPhyTrainerWarp:
             fps = 1.0 / total_time
             fps_history.append(fps)
 
-            # Display performance stats periodically
-            frame_count += 1
-            if frame_count % 10 == 0:
-                # Limit stats to last STATS_WINDOW frames
-                if len(fps_history) > STATS_WINDOW:
-                    fps_history = fps_history[-STATS_WINDOW:]
-                    for key in component_times:
-                        component_times[key] = component_times[key][-STATS_WINDOW:]
+            # # Display performance stats periodically
+            # frame_count += 1
+            # if frame_count % 10 == 0:
+            #     # Limit stats to last STATS_WINDOW frames
+            #     if len(fps_history) > STATS_WINDOW:
+            #         fps_history = fps_history[-STATS_WINDOW:]
+            #         for key in component_times:
+            #             component_times[key] = component_times[key][-STATS_WINDOW:]
 
-                avg_fps = np.mean(fps_history)
-                print(
-                    f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
-                )
-                print(f"FPS: {avg_fps:.2f}")
+            #     avg_fps = np.mean(fps_history)
+            #     print(
+            #         f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
+            #     )
+            #     print(f"FPS: {avg_fps:.2f}")
 
-                # Calculate percentages for pie chart
-                total_avg = np.mean(component_times["total"])
-                print(f"Total Frame Time: {total_avg*1000:.2f} ms")
+            #     # Calculate percentages for pie chart
+            #     total_avg = np.mean(component_times["total"])
+            #     print(f"Total Frame Time: {total_avg*1000:.2f} ms")
 
-                # Display individual component times
-                for key in [
-                    "simulator",
-                    "rendering",
-                    "frame_compositing",
-                    "full_motion_interpolation",
-                    "knn_weights",
-                    "motion_interp",
-                ]:
-                    avg_time = np.mean(component_times[key])
-                    percentage = (avg_time / total_avg) * 100
-                    print(
-                        f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
-                    )
+            #     # Display individual component times
+            #     for key in [
+            #         "simulator",
+            #         "rendering",
+            #         "frame_compositing",
+            #         "full_motion_interpolation",
+            #         "knn_weights",
+            #         "motion_interp",
+            #     ]:
+            #         avg_time = np.mean(component_times[key])
+            #         percentage = (avg_time / total_avg) * 100
+            #         print(
+            #             f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
+            #         )
 
         listener.stop()
 

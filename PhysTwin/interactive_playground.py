@@ -12,6 +12,8 @@ import glob
 import os
 import pickle
 import json
+import threading
+import time
 
 def set_all_seeds(seed):
     random.seed(seed)
@@ -98,8 +100,19 @@ if __name__ == "__main__":
     )
 
     best_model_path = glob.glob(f"experiments/{case_name}/train/best_*.pth")[0]
+
+    def scripted_movement():
+        trainer.reset()
+        print("✅ GUI loaded. Running scripted movement using delta...")
+        for step_idx in range(100):
+            delta = np.zeros((30, 3), dtype=np.float32)
+            delta[:, 0] += 0.001  # Move along +x axis
+            trainer.step_queue.put(delta)
+            print(f"[Step {step_idx:03d}] Sent delta: {delta[0]}")
+            time.sleep(1 / 30.0)
+
+    threading.Thread(target=scripted_movement, daemon=True).start()
+
     trainer.interactive_playground(
         best_model_path, gaussians_path, args.n_ctrl_parts, args.inv_ctrl
     )
-
-
