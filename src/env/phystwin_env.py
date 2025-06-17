@@ -59,6 +59,14 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         self.timer = timer
         self.init_scenario(self.best_model_path)
 
+        self.prev_target = self.simulator.controller_points[0].clone()
+        self.current_target = self.simulator.controller_points[0].clone()
+        self.prev_x = wp.to_torch(
+            self.simulator.wp_states[0].wp_x, requires_grad=False
+        ).clone()
+        self.masks_ctrl_pts = []
+
+
     """
     Init the Gym-Style Env
     """
@@ -100,14 +108,14 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         self.simulator.set_init_state(
             self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
         )
-        prev_x = wp.to_torch(
+        self.prev_x = wp.to_torch(
             self.simulator.wp_states[0].wp_x, requires_grad=False
         ).clone()
         
-        current_target = self.simulator.controller_points[0]
-        prev_target = current_target
+        self.current_target = self.simulator.controller_points[0]
+        self.prev_target = self.current_target
 
-        vis_controller_points = current_target.cpu().numpy()
+        vis_controller_points = self.current_target.cpu().numpy()
 
         gaussians = GaussianModel(sh_degree=3)
         gaussians.load_ply(self.gaussians_path)
@@ -119,22 +127,21 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         if n_ctrl_parts > 1:
             kmeans = KMeans(n_clusters=n_ctrl_parts, random_state=0, n_init=10)
             cluster_labels = kmeans.fit_predict(vis_controller_points)
-            masks_ctrl_pts = []
             for i in range(n_ctrl_parts):
                 mask = cluster_labels == i
-                masks_ctrl_pts.append(torch.from_numpy(mask))
+                self.masks_ctrl_pts.append(torch.from_numpy(mask))
 
             # 用 cluster center 的 x 坐标判断左右
-            center0 = np.mean(vis_controller_points[masks_ctrl_pts[0]], axis=0)
-            center1 = np.mean(vis_controller_points[masks_ctrl_pts[1]], axis=0)
+            center0 = np.mean(vis_controller_points[self.masks_ctrl_pts[0]], axis=0)
+            center1 = np.mean(vis_controller_points[self.masks_ctrl_pts[1]], axis=0)
 
             if center0[0] > center1[0]:  # x 坐标大的是右边
                 print("Switching the control parts")
-                masks_ctrl_pts = [masks_ctrl_pts[1], masks_ctrl_pts[0]]
+                self.masks_ctrl_pts = [self.masks_ctrl_pts[1], self.masks_ctrl_pts[0]]
         else:
-            masks_ctrl_pts = None
+            self.masks_ctrl_pts = None
         self.n_ctrl_parts = n_ctrl_parts
-        self.mask_ctrl_pts = masks_ctrl_pts
+        self.mask_ctrl_pts = self.masks_ctrl_pts
         self.scale_factors = 1.0
         assert n_ctrl_parts <= 2, "Only support 1 or 2 control parts"
         if n_ctrl_parts > 1:
@@ -152,9 +159,55 @@ class PhysTwinEnv(InvPhyTrainerWarp):
             self.hand_left_pos = self._find_closest_point(target_points)
 
 
-    def step(self, action):
+    def step(self, n_ctrl_parts, action):
         print()
+        self.simulator.set_controller_interactive(self.prev_target, self.current_target)
+        if self.simulator.object_collision_flag:
+            self.simulator.update_collision_graph()
+        wp.capture_launch(self.simulator.forward_graph)
+        x = wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False)
 
+        # Set initial state for next step
+        self.simulator.set_init_state(
+            self.simulator.wp_states[-1].wp_x,
+            self.simulator.wp_states[-1].wp_v,
+        )
+
+        torch.cuda.synchronize()
+
+        self.prev_x = x.clone()
+
+        self.prev_target = self.current_target
+        """        
+        ctrl_pts shape: [n_ctrl_parts, 3]
+        """
+        target_change = action
+        if self.masks_ctrl_pts is not None:
+            for i in range(n_ctrl_parts):
+                if self.masks_ctrl_pts[i].sum() > 0:
+                    self.current_target[self.masks_ctrl_pts[i]] += torch.tensor(
+                        target_change[i], dtype=torch.float32, device=cfg.device
+                    )
+                    if i == 0:
+                        self.hand_left_pos += torch.tensor(
+                            target_change[i], dtype=torch.float32, device=cfg.device
+                        )
+                    if i == 1:
+                        self.hand_right_pos += torch.tensor(
+                            target_change[i], dtype=torch.float32, device=cfg.device
+                        )
+        else:
+            self.current_target += torch.tensor(
+                target_change, dtype=torch.float32, device=cfg.device
+            )
+            self.hand_left_pos += torch.tensor(
+                target_change, dtype=torch.float32, device=cfg.device
+            )
+
+    def get_obs(self):
+        ctrl_pts = self.current_target.clone().detach().cpu().numpy()
+        state_pts = self.prev_x.detach().cpu().numpy()
+        return {"ctrl_pts": ctrl_pts, "state": state_pts}
 
 
 import time

@@ -1148,7 +1148,7 @@ class InvPhyTrainerWarp:
         frame_count = 0
 
         ############## End Temporary timer ##############
-        
+
 
         while True:
 
@@ -1285,6 +1285,7 @@ class InvPhyTrainerWarp:
 
                 interp_time = interp_timer.stop()
                 component_times["full_motion_interpolation"].append(interp_time)
+
 
             torch.cuda.synchronize()
 
