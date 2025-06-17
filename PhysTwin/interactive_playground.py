@@ -1,3 +1,4 @@
+# /workspace/PhysTwin/interactive_playground.py
 """
 python interactive_playground.py --inv_ctrl --n_ctrl_parts 2 --case_name double_lift_cloth_1
 """
