@@ -3,6 +3,7 @@ import numpy as np
 import warp as wp
 import torch
 import glob
+import os
 from PhysTwin.qqtt.engine.trainer_warp import InvPhyTrainerWarp
 from PhysTwin.qqtt.utils import logger, cfg
 
@@ -35,28 +36,46 @@ class PhysTwinEnv(InvPhyTrainerWarp):
     """ 
     case_name = "double_lift_cloth_1"
     exp_name = "init=hybrid_iso=True_ldepth=0.001_lnormal=0.0_laniso_0.0_lseg=1.0"
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PHYSTWIN_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../../PhysTwin"))
+    BEST_MODEL_GLOB = os.path.join(CURRENT_DIR, "../../PhysTwin/experiments", case_name, "train", "best_*.pth")
+    best_model_files = glob.glob(BEST_MODEL_GLOB)
+    if not best_model_files:
+        raise FileNotFoundError(f"No best_*.pth found at {BEST_MODEL_GLOB}")
 
-    data_path = f"../../PhysTwin/data/different_types/{case_name}/final_data.pkl"
-    base_dir = f"../../PhysTwin/temp_experiments/{case_name}"
-    optimal_params = f"../../PhysTwin/experiments_optimization/{case_name}/optimal_params.pkl"
-    calibrate = f"../../PhysTwin/data/different_types/{case_name}/calibrate.pkl"
-    metadata = f"../../PhysTwin/data/different_types/{case_name}/metadata.json"
-    best_model_path = glob.glob(f"experiments/{case_name}/train/best_*.pth")[0]
-    gaussians_path = f"../../PhysTwin/gaussian_output/{case_name}/{exp_name}/point_cloud/iteration_10000/point_cloud.ply"
+    data_path = os.path.join(PHYSTWIN_DIR, "data", "different_types", case_name, "final_data.pkl")
+    base_dir = os.path.join(PHYSTWIN_DIR, "temp_experiments", case_name)
+    optimal_params = os.path.join(PHYSTWIN_DIR, "experiments_optimization", case_name, "optimal_params.pkl")
+    calibrate = os.path.join(PHYSTWIN_DIR, "data", "different_types", case_name, "calibrate.pkl")
+    metadata = os.path.join(PHYSTWIN_DIR, "data", "different_types", case_name, "metadata.json")
+    gaussians_path = os.path.join(
+        PHYSTWIN_DIR, "gaussian_output", case_name, exp_name, "point_cloud", "iteration_10000", "point_cloud.ply"
+    )
+    best_model_path = best_model_files[0]
 
     def __init__(self, 
+                 case_name="double_lift_cloth_1",
                  data_path=data_path,
                  base_dir=base_dir,
                  train_frame=100,
-                 pure_inference_mode=True):
+                 pure_inference_mode=True,
+                 device="cuda:0"):
+        self.case_name = case_name
+        if "cloth" in self.case_name or "package" in self.case_name:
+            cfg.load_from_yaml(os.path.join(self.PHYSTWIN_DIR, "configs", "cloth.yaml"))
+        else:
+            cfg.load_from_yaml(os.path.join(self.PHYSTWIN_DIR, "configs", "real.yaml"))  
+
         super().__init__(
-            data_path=data_path,
-            base_dir=base_dir,
-            train_frame=train_frame,
-            pure_inference_mode=pure_inference_mode)
-        
+        data_path=data_path,
+        base_dir=base_dir,
+        train_frame=train_frame,
+        pure_inference_mode=pure_inference_mode,
+        device=device)
+
         timer = Timer()
         self.timer = timer
+        self.device = device
         self.init_scenario(self.best_model_path)
 
         self.prev_target = self.simulator.controller_points[0].clone()
@@ -75,7 +94,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         
         # Load the model
         logger.info(f"Load model from {best_model_path}")
-        checkpoint = torch.load(best_model_path, map_location=cfg.device)
+        checkpoint = torch.load(best_model_path, map_location=self.device)
 
         spring_Y = checkpoint["spring_Y"]
         collide_elas = checkpoint["collide_elas"]
@@ -83,6 +102,9 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         collide_object_elas = checkpoint["collide_object_elas"]
         collide_object_fric = checkpoint["collide_object_fric"]
         num_object_springs = checkpoint["num_object_springs"]
+
+        print(f"[DEBUG] Loaded spring_Y from checkpoint: {len(spring_Y)}")
+        print(f"[DEBUG] Simulator n_springs: {self.simulator.n_springs}")
 
         assert (
             len(spring_Y) == self.simulator.n_springs
