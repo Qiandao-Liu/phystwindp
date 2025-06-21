@@ -27,7 +27,7 @@ from PhysTwin.gaussian_splatting.rotation_utils import quaternion_multiply, matr
 from sklearn.cluster import KMeans
 
 
-class PhysTwinEnv(InvPhyTrainerWarp):
+class PhysTwinEnv():
     """
     Loading training data from: ./data/different_types/double_lift_cloth_1/final_data.pkl
     Keys in final_data.pkl: 
@@ -43,7 +43,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         self.case_name = case_name
 
         # ===== 1. Set Path =====
-        print("[DEBUG] 1. Set Path")
+        print("===== 1. Set Path =====")
         CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
         PHYSTWIN_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../../PhysTwin"))
         BEST_MODEL_GLOB = os.path.join(CURRENT_DIR, "../../PhysTwin/experiments", case_name, "train", "best_*.pth")
@@ -67,7 +67,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         )
 
         # ===== 2. Load Config =====
-        print("[DEBUG] 2. Load Config")
+        print("===== 2. Load Config =====")
         if "cloth" in self.case_name or "package" in self.case_name:
             cfg.load_from_yaml(os.path.join(PHYSTWIN_DIR, "configs", "cloth.yaml"))
         else:
@@ -80,17 +80,28 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         cfg.set_optimal_params(optimal_params)
 
         # ===== 3. Delegate Trainer Warp =====
-        print("[DEBUG] 3. Delegate Trainer Warp")
-        super().__init__(
+        # print("[DEBUG] 3. Delegate Trainer Warp")
+        # super().__init__(
+        #     data_path=data_path,
+        #     base_dir=base_dir,
+        #     train_frame=train_frame,
+        #     pure_inference_mode=pure_inference_mode,)
+
+        # ===== 3.1 Init a Trainer Warp =====
+        print("===== 3. Init a Trainer Warp =====")
+        trainer = InvPhyTrainerWarp(
             data_path=data_path,
             base_dir=base_dir,
-            train_frame=train_frame,
-            pure_inference_mode=pure_inference_mode,)
+            pure_inference_mode=pure_inference_mode
+        )
+
+        self.trainer = trainer
+        self.simulator = trainer.simulator
+
         # ===== 4. Init Scenario =====
-        print("[DEBUG] 4. Init Scenario")
+        print("===== 4. Init Scenario =====")
         timer = Timer()
         self.timer = timer
-        self.init_scenario(self.best_model_path)
 
         self.prev_target = self.simulator.controller_points[0].clone()
         self.current_target = self.simulator.controller_points[0].clone()
@@ -98,6 +109,8 @@ class PhysTwinEnv(InvPhyTrainerWarp):
             self.simulator.wp_states[0].wp_x, requires_grad=False
         ).clone()
         self.masks_ctrl_pts = []
+        
+        self.init_scenario(self.best_model_path)
 
 
     """
@@ -108,7 +121,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         
         # Load the model
         logger.info(f"Load model from {best_model_path}")
-        checkpoint = torch.load(best_model_path, map_location=cfg.device)
+        checkpoint = torch.load(best_model_path, map_location="cuda:0")
 
         spring_Y = checkpoint["spring_Y"]
         collide_elas = checkpoint["collide_elas"]
