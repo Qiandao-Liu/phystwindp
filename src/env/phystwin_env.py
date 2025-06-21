@@ -39,9 +39,8 @@ class PhysTwinEnv(InvPhyTrainerWarp):
                  case_name="double_lift_cloth_1",
                  train_frame=100,
                  pure_inference_mode=True,
-                 device="cuda:0"):
+                 ):
         self.case_name = case_name
-        self.device = device
 
         # ===== 1. Set Path =====
         print("[DEBUG] 1. Set Path")
@@ -86,9 +85,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
             data_path=data_path,
             base_dir=base_dir,
             train_frame=train_frame,
-            pure_inference_mode=pure_inference_mode,
-            device=device)
-
+            pure_inference_mode=pure_inference_mode,)
         # ===== 4. Init Scenario =====
         print("[DEBUG] 4. Init Scenario")
         timer = Timer()
@@ -111,7 +108,7 @@ class PhysTwinEnv(InvPhyTrainerWarp):
         
         # Load the model
         logger.info(f"Load model from {best_model_path}")
-        checkpoint = torch.load(best_model_path, map_location=self.device)
+        checkpoint = torch.load(best_model_path, map_location=cfg.device)
 
         spring_Y = checkpoint["spring_Y"]
         collide_elas = checkpoint["collide_elas"]

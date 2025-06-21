@@ -116,8 +116,10 @@ class InvPhyTrainerWarp:
 
         # Initialize the vertices, springs, rest lengths and masses
         if self.controller_points is None:
+            print("[DEBUG] self.controller_points is None")
             firt_frame_controller_points = None
         else:
+            print("[DEBUG] self.controller_points is not None, do _init_start()")
             firt_frame_controller_points = self.controller_points[0]
         (
             self.init_vertices,
@@ -208,13 +210,16 @@ class InvPhyTrainerWarp:
     ):
         object_points = object_points.cpu().numpy()
         if controller_points is not None:
+            print("[DEBUG] controller_points is not None, controller_points = controller_points.cpu().numpy()")
             controller_points = controller_points.cpu().numpy()
         if mask is None:
+            print("[DEBUG] mask is None")
             object_pcd = o3d.geometry.PointCloud()
             object_pcd.points = o3d.utility.Vector3dVector(object_points)
             pcd_tree = o3d.geometry.KDTreeFlann(object_pcd)
 
             # Connect the springs of the objects first
+            print("[DEBUG] 🚀🚀🚀🚀🚀🚀🚀🚀 Connect the springs of the objects first")
             points = np.asarray(object_pcd.points)
             spring_flags = np.zeros((len(points), len(points)))
             springs = []
@@ -966,6 +971,9 @@ class InvPhyTrainerWarp:
         collide_object_elas = checkpoint["collide_object_elas"]
         collide_object_fric = checkpoint["collide_object_fric"]
         num_object_springs = checkpoint["num_object_springs"]
+
+        print(f"🔍 [DEBUG] Simulator spring count: {self.simulator.n_springs}")
+        print(f"🔍 [DEBUG] Checkpoint spring_Y count: {spring_Y.shape[0]}")
 
         assert (
             len(spring_Y) == self.simulator.n_springs

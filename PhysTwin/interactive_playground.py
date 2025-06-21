@@ -92,6 +92,7 @@ if __name__ == "__main__":
     print("🟡 Load metadata =", f"{base_path}/{case_name}/metadata.json")
 
     logger.set_log_file(path=base_dir, name="inference_log")
+
     trainer = InvPhyTrainerWarp(
         data_path=f"{base_path}/{case_name}/final_data.pkl",
         base_dir=base_dir,
