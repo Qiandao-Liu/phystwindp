@@ -93,13 +93,19 @@ if __name__ == "__main__":
 
     logger.set_log_file(path=base_dir, name="inference_log")
 
+    data_path=f"{base_path}/{case_name}/final_data.pkl"
+    pure_inference_mode=True
     trainer = InvPhyTrainerWarp(
         data_path=f"{base_path}/{case_name}/final_data.pkl",
         base_dir=base_dir,
         pure_inference_mode=True,
     )
+    print(f"🟡🟡 data_path: {data_path}")
+    print(f"🟡🟡 base_dir: {base_dir}")
+    print(f"🟡🟡 pire_inference_mode: {pure_inference_mode}")
 
     best_model_path = glob.glob(f"experiments/{case_name}/train/best_*.pth")[0]
+    print(f"🟡🟡 best_model_path: {best_model_path}")
     trainer.interactive_playground(
         best_model_path, gaussians_path, args.n_ctrl_parts, args.inv_ctrl
     )
