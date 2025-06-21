@@ -208,11 +208,11 @@ class PhysTwinEnv():
                 ).to("cuda")
                 print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
                 print(f"[DEBUG] Hand {i} cluster points: {target_points}")
-                hand_positions.append(self._find_closest_point(target_points))
+                hand_positions.append(self.trainer._find_closest_point(target_points))
             self.hand_left_pos, self.hand_right_pos = hand_positions
         else:
             target_points = torch.from_numpy(vis_controller_points).to("cuda")
-            self.hand_left_pos = self._find_closest_point(target_points)
+            self.hand_left_pos = self.trainer._find_closest_point(target_points)
 
 
     def step(self, n_ctrl_parts, action):

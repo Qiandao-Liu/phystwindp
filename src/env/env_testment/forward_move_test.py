@@ -7,12 +7,69 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../PhysTwin")))
 from src.env.phystwin_env import PhysTwinEnv
+from matplotlib import animation
+
+def animate_gs_trajectory(gs_traj, ctrl_traj, save_path=None):
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection="3d")
+    ax.set_title("GS + Control Points Trajectory (Animated)")
+    scat_gs = ax.scatter([], [], [], s=1, color="blue", label="GS")
+    scat_ctrl = ax.scatter([], [], [], s=20, color="red", label="Ctrl")
+
+    def init():
+        ax.set_xlim([-0.2, 0.2])
+        ax.set_ylim([-0.2, 0.2])
+        ax.set_zlim([-0.2, 0.05])
+        return scat_gs, scat_ctrl
+
+    def update(frame):
+        gs = gs_traj[frame]
+        ctrl = ctrl_traj[frame]
+        scat_gs._offsets3d = (gs[:, 0], gs[:, 1], gs[:, 2])
+        scat_ctrl._offsets3d = (ctrl[:, 0], ctrl[:, 1], ctrl[:, 2])
+        ax.set_title(f"Frame {frame}")
+        return scat_gs, scat_ctrl
+
+    ani = animation.FuncAnimation(fig, update, frames=len(gs_traj), init_func=init, interval=50)
+    plt.legend()
+
+    if save_path:
+        # 保存为 mp4 文件，需先安装 ffmpeg：`conda install -c conda-forge ffmpeg`
+        ani.save(save_path, writer='ffmpeg', fps=30)
+        print(f"🎞️ 动画已保存为: {save_path}")
+    else:
+        plt.show()
+
+def animate_gs_trajectory(gs_traj, ctrl_traj):
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection="3d")
+    ax.set_title("GS + Control Points Trajectory (Animated)")
+    scat_gs = ax.scatter([], [], [], s=1, color="blue", label="GS")
+    scat_ctrl = ax.scatter([], [], [], s=20, color="red", label="Ctrl")
+
+    def init():
+        ax.set_xlim([-0.2, 0.2])
+        ax.set_ylim([-0.2, 0.2])
+        ax.set_zlim([-0.2, 0.05])
+        return scat_gs, scat_ctrl
+
+    def update(frame):
+        gs = gs_traj[frame]
+        ctrl = ctrl_traj[frame]
+        scat_gs._offsets3d = (gs[:, 0], gs[:, 1], gs[:, 2])
+        scat_ctrl._offsets3d = (ctrl[:, 0], ctrl[:, 1], ctrl[:, 2])
+        ax.set_title(f"Frame {frame}")
+        return scat_gs, scat_ctrl
+
+    ani = animation.FuncAnimation(fig, update, frames=len(gs_traj), init_func=init, interval=300)
+    plt.legend()
+    plt.show()
 
 def main():
     env = PhysTwinEnv()
     env.reset_to_origin(n_ctrl_parts=2)
 
-    num_steps = 20
+    num_steps = 200
     delta = np.array([[0.01, 0.0, 0.0], [0.01, 0.0, 0.0]])  # 每个手沿X轴移动
 
     gs_traj = []
@@ -47,6 +104,13 @@ def main():
         ax2.plot(traj[:, 0], traj[:, 1], traj[:, 2], label=f"Ctrl Point {i}")
     ax2.legend()
     plt.show()
+
+    # ✅ 可视化轨迹
+    animate_gs_trajectory(gs_traj, ctrl_traj)
+    
+    # ✅ 保存动画为 mp4
+    animate_gs_trajectory(gs_traj, ctrl_traj, save_path="traj_output.mp4")
+
 
 if __name__ == "__main__":
     main()
