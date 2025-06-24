@@ -19,6 +19,8 @@ from pynput import keyboard
 import pyrender
 import trimesh
 import matplotlib.pyplot as plt
+import glob
+
 
 from gaussian_splatting.scene.gaussian_model import GaussianModel
 from gaussian_splatting.scene.cameras import Camera
@@ -574,7 +576,17 @@ class InvPhyTrainerWarp:
 
     def on_press(self, key):
         try:
-            self.pressed_keys.add(key.char)
+            k = key.char
+            self.pressed_keys.add(k)
+            # if k == "p":
+            #     self.save_target_state(self.gaussians, self.simulator.controller_points[0])
+            if k == "p":
+                self.save_target_state(
+                    self.gaussians,
+                    self.simulator.controller_points[0],
+                    wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False),
+                    "./mpc_target_U/"
+                )
         except AttributeError:
             pass
 
@@ -1013,6 +1025,7 @@ class InvPhyTrainerWarp:
         gaussians.load_ply(gs_path)
         gaussians = remove_gaussians_with_low_opacity(gaussians, 0.1)
         gaussians.isotropic = True
+        self.gaussians = gaussians
         current_pos = gaussians.get_xyz
         current_rot = gaussians.get_rotation
         use_white_background = True  # set to True for white background
@@ -1367,6 +1380,44 @@ class InvPhyTrainerWarp:
                     )
 
         listener.stop()
+
+    # def save_target_state(self, gaussians, ctrl_pts):
+    #     save_dir = "./mpc_target_U/"
+    #     os.makedirs(save_dir, exist_ok=True)
+    #     existing = sorted(glob.glob(os.path.join(save_dir, "target_*.pkl")))
+    #     idx = len(existing)
+
+    #     target_state = {
+    #         "ctrl_pts": ctrl_pts.detach().cpu().numpy(),
+    #         "gs_pts": gaussians.get_xyz.detach().cpu().numpy(),
+    #     }
+
+    #     save_path = os.path.join(save_dir, f"target_{idx:03d}.pkl")
+    #     with open(save_path, "wb") as f:
+    #         pickle.dump(target_state, f)
+    #     print(f"\n✅ Saved target state to: {save_path}")
+    #     print(f"   - ctrl_pts: {target_state['ctrl_pts'].shape}")
+    #     print(f"   - gs_pts: {target_state['gs_pts'].shape}")
+
+    def save_target_state(self, gaussians, ctrl_pts, object_points, save_dir="./mpc_target_U/"):
+        os.makedirs(save_dir, exist_ok=True)
+        existing = sorted(glob.glob(os.path.join(save_dir, "target_*.pkl")))
+        idx = len(existing)
+
+        target_state = {
+            "ctrl_pts": ctrl_pts.detach().cpu().numpy(),          # (30, 3)
+            "gs_pts": gaussians.get_xyz.detach().cpu().numpy(),   # (~44k, 3)
+            "object_points": object_points.detach().cpu().numpy() # (~4.7k, 3)
+        }
+
+        save_path = os.path.join(save_dir, f"target_{idx:03d}.pkl")
+        with open(save_path, "wb") as f:
+            pickle.dump(target_state, f)
+
+        print(f"\n✅ Saved target state to: {save_path}")
+        for k, v in target_state.items():
+            print(f"   - {k}: {v.shape}")
+
 
     def _transform_gs(self, gaussians, M, majority_scale=1):
 
