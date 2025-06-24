@@ -806,49 +806,31 @@ class SpringMassSystemWarp:
         else:
             self.tape = wp.Tape()
 
-    """
-    Add some Functions in spring_mass_warp.py
-    """
-    def reset(self):
+    def set_controller_state(self, ctrl_pts: torch.Tensor):
         """
-        Reset the simulator to its initial state.
+        Set the current controller points.
         """
-        self.set_init_state(self.wp_init_vertices, self.wp_init_velocities)
+        assert ctrl_pts.shape == self.controller_points[0].shape, \
+            f"Expected shape {self.controller_points[0].shape}, got {ctrl_pts.shape}"
+        self.controller_points[0] = ctrl_pts.clone()
 
-        # Reset Status
-        self.wp_states = []
-        for _ in range(self.num_substeps + 1):
-            state = State(self.wp_init_velocities, self.num_control_points)
-            self.wp_states.append(state)
+    def set_custom_springs(self, spring_indices: torch.Tensor, rest_lengths: torch.Tensor):
+        """
+        Replace spring topology and rest lengths with custom values.
+        spring_indices: [N, 2] int32
+        rest_lengths: [N] float32
+        """
+        assert spring_indices.shape[0] == rest_lengths.shape[0], \
+            "Mismatch between spring indices and rest lengths"
 
-        if hasattr(self, "tape"):
-            self.tape.reset()
-        self.clear_loss()
+        self.n_springs = spring_indices.shape[0]
+        self.spring_indices = spring_indices.clone()
+        self.spring_rest_length = rest_lengths.clone()
 
-    def get_control_points(self):
-        return wp.to_torch(self.wp_target_control_point).detach().clone().cpu()
-    
-    def get_obj_pts(self):
-        return wp.to_torch(self.wp_states[-1].wp_x).detach().clone().cpu()
+        # Warp version
+        self.wp_spring_indices = wp.from_torch(self.spring_indices)
+        self.wp_spring_rest_length = wp.from_torch(self.spring_rest_length)
 
-
-    def set_control_points(self, ctrl_pts):
-        assert isinstance(ctrl_pts, np.ndarray) or isinstance(ctrl_pts, torch.Tensor)
-        if isinstance(ctrl_pts, np.ndarray):
-            ctrl_pts = torch.from_numpy(ctrl_pts).float()
-        ctrl_pts = ctrl_pts.to(self.device).float()  # Force to float32
-        self.wp_target_control_point = wp.from_torch(ctrl_pts, dtype=wp.vec3, requires_grad=True)
-        # 将 PyTorch 的控制点数据转换为 Warp（wp）的 vec3 数组（表示 3D 向量），并赋值给模拟器的 wp_target_control_point
-
-    '''
-    One Step Forward
-    '''
-    def step_ctrl(self, delta_ctrl):
-        cur_ctrl = self.get_control_points()
-        new_ctrl = cur_ctrl + delta_ctrl
-        self.set_control_points(new_ctrl)
-        self.step()
-        # print("🟢 inside spring_mass_warp.step_ctrl(), ctrl delta mean:", delta_ctrl.norm(dim=1).mean().item())
 
     """
     Set Init State from dataset

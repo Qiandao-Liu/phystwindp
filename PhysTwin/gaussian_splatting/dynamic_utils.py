@@ -105,7 +105,7 @@ def interpolate_motions(bones, motions, relations, xyz, rot=None, quat=None, wei
         S = torch.eye(3, device=device, dtype=torch.float32)[None].repeat(F_2_3.shape[0], 1, 1)
         neg_det_mask = torch.linalg.det(F_2_3) < 0
         if neg_det_mask.sum() > 0:
-            print(f'[step {step}] F det < 0 for {neg_det_mask.sum()} bones')
+            # print(f'[step {step}] F det < 0 for {neg_det_mask.sum()} bones')
             S[neg_det_mask, -1, -1] = -1  # S[:, -1, -1] or S[:, cov_rank, cov_rank] or S[:, cov_rank - 1, cov_rank - 1]?
         R = U @ S @ V.permute(0, 2, 1)
     except:
@@ -343,7 +343,7 @@ def interpolate_motions_speedup(bones, motions, relations, xyz, rot=None, quat=N
         S = torch.eye(3, device=device, dtype=torch.float32)[None].repeat(F_2_3.shape[0], 1, 1)
         neg_det_mask = torch.linalg.det(F_2_3) < 0
         if neg_det_mask.sum() > 0:
-            print(f'[step {step}] F det < 0 for {neg_det_mask.sum()} bones')
+            # print(f'[step {step}] F det < 0 for {neg_det_mask.sum()} bones')
             S[neg_det_mask, -1, -1] = -1  # S[:, -1, -1] or S[:, cov_rank, cov_rank] or S[:, cov_rank - 1, cov_rank - 1]?
         R = U @ S @ V.permute(0, 2, 1)
     except:

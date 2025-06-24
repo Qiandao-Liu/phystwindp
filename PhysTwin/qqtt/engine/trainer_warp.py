@@ -578,15 +578,28 @@ class InvPhyTrainerWarp:
         try:
             k = key.char
             self.pressed_keys.add(k)
-            # if k == "p":
-            #     self.save_target_state(self.gaussians, self.simulator.controller_points[0])
+            print(f"[key press] Detected key: {k}")
             if k == "p":
+                print("[INFO] Saving target state...")
                 self.save_target_state(
                     self.gaussians,
                     self.simulator.controller_points[0],
                     wp.to_torch(self.simulator.wp_states[-1].wp_x, requires_grad=False),
                     "./mpc_target_U/"
                 )
+            if k == "t":
+                print("[INFO] Saving custom init state...")
+                print("springs", self.simulator.wp_springs.shape)
+                print("rest_lengths", self.simulator.wp_rest_lengths.shape)
+                self.save_custom_init_state(
+                    gaussians=self.gaussians,
+                    ctrl_pts=self.simulator.controller_points[0],
+                    wp_x=self.simulator.wp_states[-1].wp_x,
+                    springs=self.simulator.wp_springs,
+                    rest_lengths=self.simulator.wp_rest_lengths
+                )
+        except Exception as e:
+            print(f"[ERROR] Key handler error: {e}")       
         except AttributeError:
             pass
 
@@ -1355,14 +1368,14 @@ class InvPhyTrainerWarp:
                         component_times[key] = component_times[key][-STATS_WINDOW:]
 
                 avg_fps = np.mean(fps_history)
-                print(
-                    f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
-                )
-                print(f"FPS: {avg_fps:.2f}")
+                # print(
+                #     f"\n--- Performance Stats (avg over last {len(fps_history)} frames) ---"
+                # )
+                # print(f"FPS: {avg_fps:.2f}")
 
                 # Calculate percentages for pie chart
                 total_avg = np.mean(component_times["total"])
-                print(f"Total Frame Time: {total_avg*1000:.2f} ms")
+                # print(f"Total Frame Time: {total_avg*1000:.2f} ms")
 
                 # Display individual component times
                 for key in [
@@ -1375,29 +1388,11 @@ class InvPhyTrainerWarp:
                 ]:
                     avg_time = np.mean(component_times[key])
                     percentage = (avg_time / total_avg) * 100
-                    print(
-                        f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
-                    )
+                    # print(
+                    #     f"{key.capitalize()}: {avg_time*1000:.2f} ms ({percentage:.1f}%)"
+                    # )
 
         listener.stop()
-
-    # def save_target_state(self, gaussians, ctrl_pts):
-    #     save_dir = "./mpc_target_U/"
-    #     os.makedirs(save_dir, exist_ok=True)
-    #     existing = sorted(glob.glob(os.path.join(save_dir, "target_*.pkl")))
-    #     idx = len(existing)
-
-    #     target_state = {
-    #         "ctrl_pts": ctrl_pts.detach().cpu().numpy(),
-    #         "gs_pts": gaussians.get_xyz.detach().cpu().numpy(),
-    #     }
-
-    #     save_path = os.path.join(save_dir, f"target_{idx:03d}.pkl")
-    #     with open(save_path, "wb") as f:
-    #         pickle.dump(target_state, f)
-    #     print(f"\n✅ Saved target state to: {save_path}")
-    #     print(f"   - ctrl_pts: {target_state['ctrl_pts'].shape}")
-    #     print(f"   - gs_pts: {target_state['gs_pts'].shape}")
 
     def save_target_state(self, gaussians, ctrl_pts, object_points, save_dir="./mpc_target_U/"):
         os.makedirs(save_dir, exist_ok=True)
@@ -1418,6 +1413,29 @@ class InvPhyTrainerWarp:
         for k, v in target_state.items():
             print(f"   - {k}: {v.shape}")
 
+    def save_custom_init_state(self, gaussians, ctrl_pts, wp_x, springs, rest_lengths, save_dir="./mpc_init/"):
+        def to_numpy(x):
+            if isinstance(x, torch.Tensor):
+                return x.detach().cpu().numpy()
+            elif hasattr(x, 'numpy'):
+                return x.numpy()
+            else:
+                return np.array(x)
+
+        os.makedirs(save_dir, exist_ok=True)
+        idx = len(sorted(glob.glob(os.path.join(save_dir, "init_*.pkl"))))
+
+        init_state = {
+            "ctrl_pts": to_numpy(ctrl_pts),
+            "gs_pts": to_numpy(gaussians.get_xyz),
+            "wp_x": to_numpy(wp_x),
+            "spring_indices": to_numpy(wp.to_torch(springs, requires_grad=False)),
+            "spring_rest_len": to_numpy(wp.to_torch(rest_lengths, requires_grad=False))
+        }
+
+        with open(os.path.join(save_dir, f"init_{idx:03d}.pkl"), "wb") as f:
+            pickle.dump(init_state, f)
+        print(f"✅ Saved init state to: init_{idx:03d}.pkl")
 
     def _transform_gs(self, gaussians, M, majority_scale=1):
 

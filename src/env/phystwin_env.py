@@ -41,6 +41,7 @@ class PhysTwinEnv():
                  pure_inference_mode=True,
                  ):
         self.case_name = case_name
+        self.n_ctrl_parts = 2 
 
         # ===== 1. Set Path =====
         print("===== 1. Set Path =====")
@@ -264,6 +265,80 @@ class PhysTwinEnv():
         ctrl_pts = self.current_target.clone().detach().cpu().numpy()
         state_pts = self.prev_x.detach().cpu().numpy()
         return {"ctrl_pts": ctrl_pts, "state": state_pts}
+    
+    def set_init_state_from_numpy(self, init_state_path):
+        """
+        Load .pkl file containing:
+        - ctrl_pts: (N, 3)
+        - gs_pts: (M, 3)
+        - wp_x: (P, 3)
+        - spring_indices: (Q, 2)
+        - spring_rest_len: (Q,)
+        """
+        print(f"🔄 [set_init_state_from_numpy] Loading: {init_state_path}")
+        with open(init_state_path, "rb") as f:
+            data = pickle.load(f)
+
+        # Set WP positions and velocities
+        wp_x = wp.array(data["wp_x"], dtype=wp.vec3f, device="cuda")
+        wp_v = wp.zeros_like(wp_x)
+
+        self.simulator.set_init_state(wp_x, wp_v)
+        self.prev_x = wp.clone(wp_x)
+
+        # Set control points
+        ctrl_pts = torch.tensor(data["ctrl_pts"], dtype=torch.float32, device=cfg.device)
+        self.prev_target = ctrl_pts.clone()
+        self.current_target = ctrl_pts.clone()
+        self.simulator.set_controller_state(ctrl_pts)
+
+        # Set spring connections
+        spring_indices = torch.tensor(data["spring_indices"], dtype=torch.int32, device=cfg.device)
+        rest_lengths = torch.tensor(data["spring_rest_len"], dtype=torch.float32, device=cfg.device)
+        self.simulator.set_custom_springs(spring_indices, rest_lengths)
+
+        # Re-cluster controller points
+        self.reset_clusters(ctrl_pts.cpu().numpy())
+
+        if self.masks_ctrl_pts is not None:
+            hand_positions = []
+            for i in range(self.n_ctrl_parts):
+                target_points = ctrl_pts[self.masks_ctrl_pts[i]].to("cuda")
+                print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
+                print(f"[DEBUG] Hand {i} cluster points: {target_points}")
+                hand_positions.append(self.trainer._find_closest_point(target_points))
+            self.hand_left_pos, self.hand_right_pos = hand_positions
+        else:
+            self.hand_left_pos = self.trainer._find_closest_point(ctrl_pts.to("cuda"))
+
+        print(f"✅ [set_init_state_from_numpy] Done: ctrl_pts={ctrl_pts.shape}, wp_x={wp_x.shape}, springs={spring_indices.shape}")
+
+    def reset_clusters(self, vis_controller_points, n_ctrl_parts=None):
+        """
+        Re-run clustering logic to assign masks_ctrl_pts.
+        """
+        if n_ctrl_parts is None:
+            n_ctrl_parts = self.n_ctrl_parts
+
+        self.masks_ctrl_pts = []
+        if n_ctrl_parts > 1:
+            kmeans = KMeans(n_clusters=n_ctrl_parts, random_state=0, n_init=10)
+            cluster_labels = kmeans.fit_predict(vis_controller_points)
+            for i in range(n_ctrl_parts):
+                mask = cluster_labels == i
+                self.masks_ctrl_pts.append(torch.from_numpy(mask))
+
+            # Sort left/right by x
+            center0 = np.mean(vis_controller_points[self.masks_ctrl_pts[0]], axis=0)
+            center1 = np.mean(vis_controller_points[self.masks_ctrl_pts[1]], axis=0)
+            if center0[0] > center1[0]:
+                print("Switching the control parts (left/right)")
+                self.masks_ctrl_pts = [self.masks_ctrl_pts[1], self.masks_ctrl_pts[0]]
+
+        else:
+            self.masks_ctrl_pts = None
+        self.mask_ctrl_pts = self.masks_ctrl_pts
+        self.n_ctrl_parts = n_ctrl_parts
 
 
 import time
