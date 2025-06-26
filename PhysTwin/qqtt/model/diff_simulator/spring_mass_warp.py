@@ -814,6 +814,13 @@ class SpringMassSystemWarp:
             f"Expected shape {self.controller_points[0].shape}, got {ctrl_pts.shape}"
         self.controller_points[0] = ctrl_pts.clone()
 
+    def get_controller_state(self) -> torch.Tensor:
+        """
+        Return the current controller points.
+        Assumes controller_points[0] is always the current state.
+        """
+        return self.controller_points[0].detach().clone()
+
     def set_custom_springs(self, spring_indices: torch.Tensor, rest_lengths: torch.Tensor):
         """
         Replace spring topology and rest lengths with custom values.

@@ -37,7 +37,7 @@ class PhysTwinEnv():
     """ 
     def __init__(self, 
                  case_name="double_lift_cloth_1",
-                 train_frame=100,
+                 train_frame=50,
                  pure_inference_mode=True,
                  ):
         self.case_name = case_name
@@ -82,15 +82,7 @@ class PhysTwinEnv():
             optimal_params = pickle.load(f)
         cfg.set_optimal_params(optimal_params)
 
-        # ===== 3. Delegate Trainer Warp =====
-        # print("[DEBUG] 3. Delegate Trainer Warp")
-        # super().__init__(
-        #     data_path=data_path,
-        #     base_dir=base_dir,
-        #     train_frame=train_frame,
-        #     pure_inference_mode=pure_inference_mode,)
-
-        # ===== 3.1 Init a Trainer Warp =====
+        # ===== 3. Init a Trainer Warp =====
         print("===== 3. Init a Trainer Warp =====")        
         cfg.device = torch.device("cuda:0")
         trainer = InvPhyTrainerWarp(
@@ -138,8 +130,8 @@ class PhysTwinEnv():
         collide_object_fric = checkpoint["collide_object_fric"]
         num_object_springs = checkpoint["num_object_springs"]
 
-        print(f"🔍 [DEBUG] Simulator spring count: {self.simulator.n_springs}")
-        print(f"🔍 [DEBUG] Checkpoint spring_Y count: {spring_Y.shape[0]}")
+        # print(f"[DEBUG] Simulator spring count: {self.simulator.n_springs}")
+        # print(f"[DEBUG] Checkpoint spring_Y count: {spring_Y.shape[0]}")
 
         # assert (
         #     len(spring_Y) == self.simulator.n_springs
@@ -161,7 +153,7 @@ class PhysTwinEnv():
     Reset and clean spring_mass system
     """
     def reset_to_origin(self, n_ctrl_parts=2):
-        print(f"[reset] Reset at time {self.timer.stop():.3f}s.")
+        # print(f"[reset] Reset at time {self.timer.stop():.3f}s.")
         self.simulator.set_init_state(
             self.simulator.wp_init_vertices, self.simulator.wp_init_velocities
         )
@@ -193,7 +185,7 @@ class PhysTwinEnv():
             center1 = np.mean(vis_controller_points[self.masks_ctrl_pts[1]], axis=0)
 
             if center0[0] > center1[0]:  # x 坐标大的是右边
-                print("Switching the control parts")
+                # print("Switching the control parts")
                 self.masks_ctrl_pts = [self.masks_ctrl_pts[1], self.masks_ctrl_pts[0]]
         else:
             self.masks_ctrl_pts = None
@@ -207,8 +199,8 @@ class PhysTwinEnv():
                 target_points = torch.from_numpy(
                     vis_controller_points[self.mask_ctrl_pts[i]]
                 ).to("cuda")
-                print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
-                print(f"[DEBUG] Hand {i} cluster points: {target_points}")
+                # print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
+                # print(f"[DEBUG] Hand {i} cluster points: {target_points}")
                 hand_positions.append(self.trainer._find_closest_point(target_points))
             self.hand_left_pos, self.hand_right_pos = hand_positions
         else:
@@ -304,8 +296,8 @@ class PhysTwinEnv():
             hand_positions = []
             for i in range(self.n_ctrl_parts):
                 target_points = ctrl_pts[self.masks_ctrl_pts[i]].to("cuda")
-                print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
-                print(f"[DEBUG] Hand {i} cluster points: {target_points}")
+                # print(f"[DEBUG] Hand {i} cluster points shape: {target_points.shape}")
+                # print(f"[DEBUG] Hand {i} cluster points: {target_points}")
                 hand_positions.append(self.trainer._find_closest_point(target_points))
             self.hand_left_pos, self.hand_right_pos = hand_positions
         else:
@@ -332,7 +324,7 @@ class PhysTwinEnv():
             center0 = np.mean(vis_controller_points[self.masks_ctrl_pts[0]], axis=0)
             center1 = np.mean(vis_controller_points[self.masks_ctrl_pts[1]], axis=0)
             if center0[0] > center1[0]:
-                print("Switching the control parts (left/right)")
+                # print("Switching the control parts (left/right)")
                 self.masks_ctrl_pts = [self.masks_ctrl_pts[1], self.masks_ctrl_pts[0]]
 
         else:
@@ -340,6 +332,11 @@ class PhysTwinEnv():
         self.mask_ctrl_pts = self.masks_ctrl_pts
         self.n_ctrl_parts = n_ctrl_parts
 
+    def get_ctrl_pts(self):
+        return self.simulator.get_controller_state()
+    
+    def get_gs_pts(self):
+        return self.get_obs()["state"]
 
 import time
 

@@ -197,7 +197,7 @@ def remove_gaussians_with_low_opacity(gaussians, opacity_threshold=0.1):
 
     opacity = gaussians.get_opacity.squeeze(-1)
     mask3d = opacity > opacity_threshold
-    print(f"Removing {len(mask3d) - mask3d.sum()} gaussians with opacity < 0.1")
+    # print(f"Removing {len(mask3d) - mask3d.sum()} gaussians with opacity < 0.1")
 
     new_gaussians = copy.deepcopy(gaussians)
     new_gaussians._xyz = gaussians._xyz[mask3d]

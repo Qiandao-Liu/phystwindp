@@ -1072,7 +1072,7 @@ class InvPhyTrainerWarp:
             center1 = center1 / center1[-1]
             center2 = center2 / center2[-1]
             if center1[0] > center2[0]:
-                print("Switching the control parts")
+                # print("Switching the control parts")
                 masks_ctrl_pts = [masks_ctrl_pts[1], masks_ctrl_pts[0]]
         else:
             masks_ctrl_pts = None
