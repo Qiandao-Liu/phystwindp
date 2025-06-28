@@ -100,7 +100,7 @@ def run_mpc(init_idx=0, target_idx=0):
             "optimized_actions": optimized_actions.detach().cpu().numpy(),
         }, f)
     print(f"💾 Saved trajectory to {save_path}")
-    wandb.finish()
+    wandb.finish() 
 
 
 if __name__ == "__main__":
