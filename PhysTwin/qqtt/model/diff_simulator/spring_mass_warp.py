@@ -741,6 +741,11 @@ class SpringMassSystemWarp:
                 (self.num_original_points), dtype=wp.int32, requires_grad=False
             )
 
+        self.n_ctrl_pts = self.wp_states[0].wp_control_x.shape[0]
+        print("len(wp_states):", len(self.wp_states))
+        print("wp_states[0].wp_control_x shape:", self.wp_states[0].wp_control_x.shape)
+        print("n_ctrl_pts:", self.n_ctrl_pts)
+
         # Parameter to be optimized
         self.wp_spring_Y = wp.from_torch(
             torch.log(torch.tensor(spring_Y, dtype=torch.float32, device=self.device))
@@ -1021,7 +1026,6 @@ class SpringMassSystemWarp:
 
     def step(self):
         for i in range(self.num_substeps):
-            # print(f"🔁 Substep {i}")
             # 清空当前子步的所有外力
             self.wp_states[i].clear_forces()
 
@@ -1114,6 +1118,98 @@ class SpringMassSystemWarp:
                 ],
                 outputs=[self.wp_states[i + 1].wp_x, self.wp_states[i + 1].wp_v],
             )
+
+
+    def step_with_action(self, action_t: wp.array):
+        for i in range(self.num_substeps):
+            self.wp_states[i].clear_forces()
+
+            wp.launch(
+                kernel=apply_ctrl_action,
+                dim=self.n_ctrl_pts,
+                inputs=[self.wp_states[i].wp_control_x, action_t],
+                device=self.device,
+            )
+
+            wp.launch(
+                kernel=eval_springs,
+                dim=self.n_springs,
+                inputs=[
+                    self.wp_states[i].wp_x,
+                    self.wp_states[i].wp_v,
+                    self.wp_states[i].wp_control_x,
+                    self.wp_states[i].wp_control_v,
+                    self.num_object_points,
+                    self.wp_springs,
+                    self.wp_rest_lengths,
+                    self.wp_spring_Y,
+                    self.dashpot_damping,
+                    self.spring_Y_min,
+                    self.spring_Y_max,
+                ],
+                outputs=[self.wp_states[i].wp_vertice_forces],
+                device=self.device,
+            )
+
+            output_v = (
+                self.wp_states[i].wp_v_before_collision
+                if self.object_collision_flag
+                else self.wp_states[i].wp_v_before_ground
+            )
+
+            wp.launch(
+                kernel=update_vel_from_force,
+                dim=self.num_object_points,
+                inputs=[
+                    self.wp_states[i].wp_v,
+                    self.wp_states[i].wp_vertice_forces,
+                    self.wp_masses,
+                    self.dt,
+                    self.drag_damping,
+                    self.reverse_factor,
+                ],
+                outputs=[output_v],
+                device=self.device,
+            )
+
+            if self.object_collision_flag:
+                wp.launch(
+                    kernel=object_collision,
+                    dim=self.num_object_points,
+                    inputs=[
+                        self.wp_states[i].wp_x,
+                        self.wp_states[i].wp_v_before_collision,
+                        self.wp_masses,
+                        self.wp_masks,
+                        self.wp_collide_object_elas,
+                        self.wp_collide_object_fric,
+                        self.collision_dist,
+                        self.wp_collision_indices,
+                        self.wp_collision_number,
+                    ],
+                    outputs=[self.wp_states[i].wp_v_before_ground],
+                    device=self.device,
+                )
+
+            wp.launch(
+                kernel=integrate_ground_collision,
+                dim=self.num_object_points,
+                inputs=[
+                    self.wp_states[i].wp_x,
+                    self.wp_states[i].wp_v_before_ground,
+                    self.wp_collide_elas,
+                    self.wp_collide_fric,
+                    self.dt,
+                    self.reverse_factor,
+                ],
+                outputs=[
+                    self.wp_states[i + 1].wp_x,
+                    self.wp_states[i + 1].wp_v,
+                ],
+                device=self.device,
+            )
+
+
 
     def calculate_loss(self):
         # Compute the chamfer loss
@@ -1243,3 +1339,9 @@ class SpringMassSystemWarp:
             inputs=[collide_object_fric],
             outputs=[self.wp_collide_object_fric],
         )
+
+@wp.kernel(enable_backward=True)
+def apply_ctrl_action(ctrl_out: wp.array(dtype=wp.vec3), ctrl_in: wp.array(dtype=wp.vec3)):
+    tid = wp.tid()
+    ctrl_out[tid] = ctrl_in[tid]
+

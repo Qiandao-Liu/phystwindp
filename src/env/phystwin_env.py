@@ -44,7 +44,7 @@ class PhysTwinEnv():
         self.n_ctrl_parts = 2 
 
         # ===== 1. Set Path =====
-        print("===== 1. Set Path =====")
+        # print("===== 1. Set Path =====")
         CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
         PHYSTWIN_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../../PhysTwin"))
         BEST_MODEL_GLOB = os.path.join(CURRENT_DIR, "../../PhysTwin/experiments", case_name, "train", "best_*.pth")
@@ -68,7 +68,7 @@ class PhysTwinEnv():
         )
 
         # ===== 2. Load Config =====
-        print("===== 2. Load Config =====")
+        # print("===== 2. Load Config =====")
         if "cloth" in self.case_name or "package" in self.case_name:
             cfg.load_from_yaml(os.path.join(PHYSTWIN_DIR, "configs", "cloth.yaml"))
         else:
@@ -83,7 +83,7 @@ class PhysTwinEnv():
         cfg.set_optimal_params(optimal_params)
 
         # ===== 3. Init a Trainer Warp =====
-        print("===== 3. Init a Trainer Warp =====")        
+        # print("===== 3. Init a Trainer Warp =====")        
         cfg.device = torch.device("cuda:0")
         trainer = InvPhyTrainerWarp(
             data_path=data_path,
@@ -98,7 +98,7 @@ class PhysTwinEnv():
         self.simulator = trainer.simulator
 
         # ===== 4. Init Scenario =====
-        print("===== 4. Init Scenario =====")
+        # print("===== 4. Init Scenario =====")
         timer = Timer()
         self.timer = timer
 
