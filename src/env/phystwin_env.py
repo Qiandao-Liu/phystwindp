@@ -209,7 +209,6 @@ class PhysTwinEnv():
 
 
     def step(self, n_ctrl_parts, action):
-        print()
         self.simulator.set_controller_interactive(self.prev_target, self.current_target)
         if self.simulator.object_collision_flag:
             self.simulator.update_collision_graph()

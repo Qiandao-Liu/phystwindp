@@ -28,8 +28,13 @@ def simulate_trajectory(env, action_seq, init_state_path, max_delta=0.03):
         env.step(env.n_ctrl_parts, action_step)
 
         obs = env.get_obs()
-        pred_ctrl_traj.append(torch.tensor(obs["ctrl_pts"], device="cuda"))
-        pred_gs_traj.append(torch.tensor(obs["state"], device="cuda"))
+        ctrl = torch.from_numpy(obs["ctrl_pts"]).float().to("cuda")
+        gs = torch.from_numpy(obs["state"]).float().to("cuda")
+
+        pred_ctrl_traj.append(ctrl)
+        pred_gs_traj.append(gs)
+
+        # print(f"[Step {t}] ctrl.requires_grad = {ctrl.requires_grad}")
 
     pred_ctrl_traj = torch.stack(pred_ctrl_traj)  # (H, N, 3)
     pred_gs_traj = torch.stack(pred_gs_traj)      # (H, M, 3)
@@ -37,14 +42,14 @@ def simulate_trajectory(env, action_seq, init_state_path, max_delta=0.03):
     return pred_ctrl_traj, pred_gs_traj
 
 
-def compute_loss(pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts,
+def compute_loss(pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts, action_seq, 
                  smooth_weight=0.1, use_mean_chamfer=False):
     """
     Compute total loss from Chamfer + Ctrl MSE + Smoothness.
     Optionally use mean chamfer.
     """
     # Chamfer loss (end GS state)
-    chamfer_loss = chamfer(pred_gs_traj[-1:].unsqueeze(0), target_gs_pts.unsqueeze(0)).mean()
+    chamfer_loss = chamfer(pred_gs_traj[-1:], target_gs_pts.unsqueeze(0)).mean()
 
     if use_mean_chamfer:
         state_pred = pred_gs_traj[-1]         # (M_pred, 3)
@@ -66,8 +71,14 @@ def compute_loss(pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts,
 
 
 def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horizon=40, lr=1e-2, outer_iters=200):
-    global action_seq  # for smoothness loss
+    def print_grad_hook(name):
+        def hook(grad):
+            print(f"🔍 Grad for {name}: norm = {grad.norm():.6f}")
+            return grad
+        return hook
+
     action_seq = torch.zeros((horizon, env.n_ctrl_parts, 3), requires_grad=True, device="cuda")
+    action_seq.register_hook(print_grad_hook("action_seq"))
 
     optimizer = torch.optim.Adam([action_seq], lr=lr)
 
@@ -75,7 +86,7 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
         pred_ctrl_traj, pred_gs_traj = simulate_trajectory(env, action_seq, init_state_path=init_state_path)
 
         loss, chamfer_loss, ctrl_loss, smooth_loss = compute_loss(
-            pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts,
+            pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts, action_seq, 
             smooth_weight=0.1, use_mean_chamfer=False
         )
 
@@ -89,8 +100,8 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
 
 
 env = PhysTwinEnv(case_name="double_lift_cloth_1")
-init_state_path = "./mpc_init/init_002.pkl"
-target_state_path = "./mpc_target_U/target_002.pkl"
+init_state_path = os.path.join("PhysTwin", "mpc_init", "init_002.pkl")
+target_state_path = os.path.join("PhysTwin", "mpc_target_U", "target_002.pkl")
 
 target_state = pickle.load(open(target_state_path, "rb"))
 target_gs_pts = torch.tensor(target_state["gs_pts"], dtype=torch.float32, device="cuda")

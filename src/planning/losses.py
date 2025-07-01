@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 def chamfer(x, y):  # x: (B, N, D), y: (B, M, D)
+    assert x.ndim == 3 and y.ndim == 3, f"Expected (B, M/N, D), got {x.shape}, {y.shape}"
     x = x[:, None].repeat(1, y.shape[1], 1, 1)  # (B, M, N, D)
     y = y[:, :, None].repeat(1, 1, x.shape[2], 1)  # (B, M, N, D)
     dis = torch.norm(x - y, 2, dim=-1)  # (B, M, N)
