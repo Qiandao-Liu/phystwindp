@@ -8,7 +8,7 @@ from tqdm import tqdm
 from src.planning.losses import chamfer
 
 class MPPI:
-    def __init__(self, env, horizon=50, num_samples=512, lambda_=1.0, noise_sigma=0.05, outer_iters=5,
+    def __init__(self, env, horizon=50, num_samples=512, lambda_=1.0, noise_sigma=0.05, outer_iters=200,
              init_idx=0, target_idx=0, init_path=None):
         self.init_idx = init_idx
         self.target_idx = target_idx
@@ -41,8 +41,10 @@ class MPPI:
             for i in tqdm(range(self.N), desc=f"Outer {outer_iter} - Samples", leave=False):
                 noisy_u = self.u + noise[i]
                 self.env.reset_to_origin()
+                max_step = 0.01
                 for t in range(self.H):
-                    self.env.step(self.env.n_ctrl_parts, noisy_u[t])
+                    clipped_action = torch.clamp(noisy_u[t], -max_step, max_step)
+                    self.env.step(self.env.n_ctrl_parts, clipped_action)
                 final_ctrl = torch.tensor(self.env.get_ctrl_pts()).to(self.device)
                 final_gs = torch.tensor(self.env.get_gs_pts()).to(self.device)
                 ctrl_loss = torch.nn.functional.mse_loss(final_ctrl, target_ctrl)
@@ -62,7 +64,7 @@ class MPPI:
                 "max_cost": costs.max().item(),
             })
 
-            SAVE_ITERS = {1, 2, 5, 10, 20, 50, 80, 100, 120, 150, 200}
+            SAVE_ITERS = {1, 5, 20, 50, 80, 100, 150, 200, 400, 500}
 
             if outer_iter + 1 in SAVE_ITERS:
                 self.env.set_init_state_from_numpy(self.init_path)

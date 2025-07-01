@@ -1,4 +1,7 @@
 # /workspace/src/planning/run_mpc_physenv.py
+"""
+/home/qiandaoliu/miniconda3/envs/phystwin/bin/python /home/qiandaoliu/workspace/src/planning/run_mpc_physenv.py --init_idx 2 --target_idx 2 --outer_iters 500
+"""
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../PhysTwin")))
@@ -104,4 +107,4 @@ def run_mpc(init_idx=0, target_idx=0):
 
 
 if __name__ == "__main__":
-    run_mpc(init_idx=0, target_idx=0)
+    run_mpc(init_idx=args.init_idx, target_idx=args.target_idx)
