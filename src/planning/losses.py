@@ -10,19 +10,37 @@ def chamfer(x, y):  # x: (B, N, D), y: (B, M, D)
     dis_yx = torch.mean(dis.min(dim=1).values, dim=1)  # dis_yx: mean over M
     return dis_xy + dis_yx
 
-def mean_chamfer(state_pred, state_real, state_pred_mask, state_real_mask):
-    # chamfer distance
-    # state_pred: numpy.ndarray (bsz, max_nobj, 3)
-    # state_real: numpy.ndarray (bsz, max_nobj, 3)
-    bsz = state_pred.shape[0]
-    chamfer_dist_list = []
-    for i in range(bsz):
-        state_p = state_pred[i][state_pred_mask[i]][None]  # (1, nobj, 3)
-        state_r = state_real[i][state_real_mask[i]][None]  # (1, nobj, 3)
-        chamfer_dist = chamfer(state_p, state_r).item()
-        chamfer_dist_list.append(chamfer_dist)
-    chamfer_distance = np.array(chamfer_dist_list)  # (bsz,)
-    return chamfer_distance
+# def mean_chamfer(state_pred, state_real, state_pred_mask, state_real_mask):
+#     # chamfer distance
+#     # state_pred: numpy.ndarray (bsz, max_nobj, 3)
+#     # state_real: numpy.ndarray (bsz, max_nobj, 3)
+#     bsz = state_pred.shape[0]
+#     chamfer_dist_list = []
+#     for i in range(bsz):
+#         state_p = state_pred[i][state_pred_mask[i]][None]  # (1, nobj, 3)
+#         state_r = state_real[i][state_real_mask[i]][None]  # (1, nobj, 3)
+#         chamfer_dist = chamfer(state_p, state_r).item()
+#         chamfer_dist_list.append(chamfer_dist)
+#     chamfer_distance = np.array(chamfer_dist_list)  # (bsz,)
+#     return chamfer_distance
+
+def mean_chamfer_torch(state_pred, state_real, state_pred_mask, state_real_mask):
+    # state_pred, state_real: (B, N, 3), (B, M, 3)
+    # state_pred_mask, state_real_mask: (B, N), (B, M)
+    B = state_pred.shape[0]
+    chamfer_list = []
+
+    for i in range(B):
+        p = state_pred[i][state_pred_mask[i]]
+        t = state_real[i][state_real_mask[i]]
+        x = p[None].repeat(t.shape[0], 1, 1)
+        y = t[:, None].repeat(1, p.shape[0], 1)
+        dis = torch.norm(x - y, dim=-1)  # (M, N)
+        dis_xy = dis.min(dim=1).values.mean()
+        dis_yx = dis.min(dim=0).values.mean()
+        chamfer_list.append(dis_xy + dis_yx)
+
+    return torch.stack(chamfer_list)  # (B,)
 
 def box_loss(state, target):
     # state: (B, N, 3)

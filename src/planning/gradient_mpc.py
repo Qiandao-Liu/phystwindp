@@ -2,114 +2,99 @@
 
 import torch
 import warp as wp
-from warp.torch import from_torch
 from tqdm import trange
 import numpy as np
 import pickle
 import sys, os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../PhysTwin")))
 
 from src.env.phystwin_env import PhysTwinEnv
-from src.planning.losses import chamfer
+from src.planning.losses import chamfer, mean_chamfer_torch
 
-import sys
-import faulthandler
-faulthandler.enable()
-import warnings
-import os
-# 禁用多次CUDA报错输出，只要报一次就停
-os.environ["WARP_DISABLE_DEVICE_FREE_ASYNC_ERRORS"] = "1"
-def error_handler(type, value, tb):
-    print(f"❌ Fatal error: {value}")
-    sys.exit(1)
-sys.excepthook = error_handler
+def simulate_trajectory(env, action_seq, init_state_path, max_delta=0.03):
+    """
+    Simulate the trajectory in the environment with clamped actions.
+    Returns predicted control and GS trajectories.
+    """
+    env.set_init_state_from_numpy(init_state_path)
+
+    pred_ctrl_traj = []
+    pred_gs_traj = []
+
+    for t in range(len(action_seq)):
+        action_step = torch.clamp(action_seq[t], min=-max_delta, max=max_delta)
+        env.step(env.n_ctrl_parts, action_step)
+
+        obs = env.get_obs()
+        pred_ctrl_traj.append(torch.tensor(obs["ctrl_pts"], device="cuda"))
+        pred_gs_traj.append(torch.tensor(obs["state"], device="cuda"))
+
+    pred_ctrl_traj = torch.stack(pred_ctrl_traj)  # (H, N, 3)
+    pred_gs_traj = torch.stack(pred_gs_traj)      # (H, M, 3)
+
+    return pred_ctrl_traj, pred_gs_traj
 
 
-wp.config.enable_autodiff = True
+def compute_loss(pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts,
+                 smooth_weight=0.1, use_mean_chamfer=False):
+    """
+    Compute total loss from Chamfer + Ctrl MSE + Smoothness.
+    Optionally use mean chamfer.
+    """
+    # Chamfer loss (end GS state)
+    chamfer_loss = chamfer(pred_gs_traj[-1:].unsqueeze(0), target_gs_pts.unsqueeze(0)).mean()
 
-# === 配置 ===
-case_name = "double_lift_cloth_1"
-init_idx = 0
-target_idx = 0
-H = 60                     # MPC steps
-outer_iters = 200          # Optimization steps
-save_steps = [1, 2, 5, 10, 20, 50, 100, 150, 200]
+    if use_mean_chamfer:
+        state_pred = pred_gs_traj[-1]         # (M_pred, 3)
+        state_real = target_gs_pts            # (M_target, 3)
+        state_pred_mask = torch.ones(len(state_pred), dtype=torch.bool, device="cuda")
+        state_real_mask = torch.ones(len(state_real), dtype=torch.bool, device="cuda")
+        mean_chamfer_loss = mean_chamfer_torch(state_pred, state_real, state_pred_mask, state_real_mask)
+        chamfer_loss = mean_chamfer_loss
 
-# === 加载环境 ===
-env = PhysTwinEnv(case_name=case_name)
+    # Controller loss (final frame)
+    ctrl_loss = torch.nn.functional.mse_loss(pred_ctrl_traj[-1], target_ctrl_pts)
 
-# === 加载起始和目标状态 ===
-init_path = f"PhysTwin/mpc_init/init_{init_idx:03d}.pkl"
-target_path = f"PhysTwin/mpc_target_U/target_{target_idx:03d}.pkl"
+    # Smoothness loss: ||a_t+1 - a_t||^2
+    smooth_loss = torch.mean((action_seq[1:] - action_seq[:-1]) ** 2)
 
-with open(target_path, "rb") as f:
-    target_data = pickle.load(f)
+    total_loss = chamfer_loss + ctrl_loss + smooth_weight * smooth_loss
 
-env.set_init_state_from_numpy(init_path)
+    return total_loss, chamfer_loss, ctrl_loss, smooth_loss
 
-n_ctrl = env.n_ctrl_parts
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# === 初始化控制变量 ===
-actions = torch.zeros((H, n_ctrl, 3), dtype=torch.float32, requires_grad=True, device=device)
-optimizer = torch.optim.Adam([actions], lr=0.05)
+def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horizon=40, lr=1e-2, outer_iters=200):
+    global action_seq  # for smoothness loss
+    action_seq = torch.zeros((horizon, env.n_ctrl_parts, 3), requires_grad=True, device="cuda")
 
-# === 优化循环 ===
-for step in trange(outer_iters):
-    env.set_init_state_from_numpy(init_path)
-    
-    traj_ctrl, traj_gs = [], []
-    
-    tape = wp.Tape()
-    with tape:
-        for t in range(H):
-            # action_numpy = actions[t].detach().cpu().numpy()
-            # assert action_numpy.shape == (n_ctrl, 3), f"Expected shape {(n_ctrl,3)}, got {action_numpy.shape}"
-            wp_action = from_torch(actions[t], dtype=wp.vec3, requires_grad=True)
+    optimizer = torch.optim.Adam([action_seq], lr=lr)
 
-            env.simulator.step_with_action(wp_action)
-            traj_ctrl.append(env.get_ctrl_pts().detach().cpu().numpy())
-            traj_gs.append(env.get_gs_pts())
+    for outer in trange(outer_iters):
+        pred_ctrl_traj, pred_gs_traj = simulate_trajectory(env, action_seq, init_state_path=init_state_path)
 
-        final_ctrl = torch.tensor(traj_ctrl[-1], device=device)
-        final_gs = torch.tensor(traj_gs[-1], device=device)
+        loss, chamfer_loss, ctrl_loss, smooth_loss = compute_loss(
+            pred_ctrl_traj, pred_gs_traj, target_ctrl_pts, target_gs_pts,
+            smooth_weight=0.1, use_mean_chamfer=False
+        )
 
-        target_ctrl = torch.tensor(target_data["ctrl_pts"], device=device)
-        target_gs = torch.tensor(target_data["gs_pts"], device=device)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-        loss_ctrl = torch.nn.functional.mse_loss(final_ctrl, target_ctrl)
-        loss_chamfer = chamfer(final_gs[None], target_gs[None])[0]
-        loss = loss_ctrl + loss_chamfer
+        # Print diagnostics
+        grad_norm = action_seq.grad.norm().item() if action_seq.grad is not None else 0.0
+        print(f"[iter {outer}] total={loss.item():.4f} | chamfer={chamfer_loss.item():.4f} | ctrl={ctrl_loss.item():.4f} | smooth={smooth_loss.item():.4f} | grad_norm={grad_norm:.4f}")
 
-    optimizer.zero_grad()
 
-    loss.backward()
-    print(f"actions.grad.norm: {actions.grad.norm()}")
-    
-    optimizer.step()
+env = PhysTwinEnv(case_name="double_lift_cloth_1")
+init_state_path = "./mpc_init/init_002.pkl"
+target_state_path = "./mpc_target_U/target_002.pkl"
 
-    if step in save_steps:
-        save_name = f"PhysTwin/mpc_output/grad_case={case_name}_init{init_idx:03d}_target{target_idx:03d}_step{step:03d}.pkl"
-        with open(save_name, "wb") as f:
-            pickle.dump({
-                "ctrl_traj": np.array(traj_ctrl),
-                "gs_traj": np.array(traj_gs),
-                "optimized_actions": actions.detach().cpu().numpy(),
-            }, f)
-        print(f"📸 Saved intermediate traj at step {step} to {save_name}")
+target_state = pickle.load(open(target_state_path, "rb"))
+target_gs_pts = torch.tensor(target_state["gs_pts"], dtype=torch.float32, device="cuda")
+target_ctrl_pts = torch.tensor(target_state["ctrl_pts"], dtype=torch.float32, device="cuda")
 
-    if step % 20 == 0:
-        print(f"[{step}] Loss: chamfer={loss_chamfer.item():.4f}, ctrl={loss_ctrl.item():.4f}")
+run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path=init_state_path, horizon=40, lr=5e-2, outer_iters=300)
 
-# === 最终保存 ===
-save_path = f"PhysTwin/mpc_output/grad_case={case_name}_init{init_idx:03d}_target{target_idx:03d}.pkl"
-with open(save_path, "wb") as f:
-    pickle.dump({
-        "ctrl_traj": np.array(traj_ctrl),
-        "gs_traj": np.array(traj_gs),
-        "optimized_actions": actions.detach().cpu().numpy(),
-        "target_ctrl": target_data["ctrl_pts"],
-        "target_gs": target_data["gs_pts"],
-    }, f)
-print(f"✅ Saved gradient MPC trajectory to: {save_path}")
