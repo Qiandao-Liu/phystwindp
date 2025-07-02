@@ -37,33 +37,6 @@ def animate_gs_trajectory_v(gs_traj, ctrl_traj, save_path=None):
     else:
         plt.show()
 
-# def main():
-#     env = PhysTwinEnv()
-#     env.reset_to_origin(n_ctrl_parts=2)
-
-#     T = 200
-#     theta = np.linspace(0, 2 * np.pi, T)
-#     ctrl_delta_traj = np.zeros((T, 2, 3))
-
-#     # 控制点0：圆周运动（XZ）
-#     ctrl_delta_traj[:, 0, 0] = 0.01 * np.cos(theta)
-#     ctrl_delta_traj[:, 0, 2] = 0.01 * np.sin(theta)
-
-#     # 控制点1：Y方向来回 + X方向轻微波动
-#     ctrl_delta_traj[:, 1, 1] = 0.01 * np.sin(2 * theta)
-#     ctrl_delta_traj[:, 1, 0] = 0.005 * np.sin(3 * theta)
-
-#     gs_traj = []
-#     ctrl_traj = []
-
-#     for t in range(T):
-#         env.step(n_ctrl_parts=2, action=ctrl_delta_traj[t])
-#         obs = env.get_obs()
-#         gs_traj.append(obs["state"])
-#         ctrl_traj.append(obs["ctrl_pts"])
-
-#     animate_gs_trajectory_v(np.array(gs_traj), np.array(ctrl_traj), save_path="complex_traj.mp4")
-
 def main():
     env = PhysTwinEnv()
     env.reset_to_origin(n_ctrl_parts=2)

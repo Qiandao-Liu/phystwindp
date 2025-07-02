@@ -83,15 +83,14 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
         return hook
 
     action_seq = torch.zeros((horizon, env.n_ctrl_parts, 3), requires_grad=True, device="cuda")
-    env.simulator.wp_target_control_point.requires_grad = True
-
     action_seq.register_hook(print_grad_hook("action_seq"))
 
     optimizer = torch.optim.Adam([action_seq], lr=lr)
 
+    # 只 set_init_state_from_numpy 一次
+    env.set_init_state_from_numpy(init_state_path)
+
     for outer in range(outer_iters):
-        env.set_init_state_from_numpy(init_state_path)
-        
         pred_ctrl_traj, pred_gs_traj = simulate_trajectory(env, action_seq, init_state_path=init_state_path)
 
         loss, chamfer_loss, ctrl_loss, smooth_loss = compute_loss(
@@ -100,8 +99,6 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
         )
 
         optimizer.zero_grad()
-        tape.backward(loss=loss)
-
         loss.backward()
         optimizer.step()
 
@@ -109,30 +106,6 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
         grad_norm = action_seq.grad.norm().item() if action_seq.grad is not None else 0.0
         print(f"[iter {outer}] total loss={loss.detach().item():.4f} | chamfer={chamfer_loss.item():.4f} | ctrl={ctrl_loss.item():.4f} | smooth={smooth_loss.item():.4f} | grad_norm={grad_norm:.4f}")
 
-def simulate_with_tape(env, action_seq, target_ctrl_pts, target_gs_pts):
-    pred_ctrl_traj, pred_gs_traj = [], []
-
-    with wp.Tape() as tape:
-        env.set_init_state_from_numpy(init_state_path)
-
-        for t in range(len(action_seq)):
-            # 应用 clamped 控制动作
-            delta = torch.clamp(action_seq[t], -0.03, 0.03)
-            env.step(env.n_ctrl_parts, delta)
-
-            obs = env.get_obs()
-            pred_ctrl_traj.append(obs["ctrl_pts"])
-            pred_gs_traj.append(obs["state"])
-
-        pred_ctrl_traj = torch.stack(pred_ctrl_traj)
-        pred_gs_traj = torch.stack(pred_gs_traj)
-
-        # 计算 loss（只使用最后一帧）
-        chamfer_loss = chamfer(pred_gs_traj[-1:], target_gs_pts.unsqueeze(0)).mean()
-        ctrl_loss = torch.nn.functional.mse_loss(pred_ctrl_traj[-1], target_ctrl_pts)
-        total_loss = chamfer_loss + ctrl_loss
-
-    return total_loss, tape
 
 env = PhysTwinEnv(case_name="double_lift_cloth_1")
 init_state_path = os.path.join("PhysTwin", "mpc_init", "init_002.pkl")

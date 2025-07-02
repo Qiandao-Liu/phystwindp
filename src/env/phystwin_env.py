@@ -180,7 +180,7 @@ class PhysTwinEnv():
                 mask = cluster_labels == i
                 self.masks_ctrl_pts.append(torch.from_numpy(mask))
 
-            # 用 cluster center 的 x 坐标判断左右
+            # cluster center x 坐标判断左右
             center0 = np.mean(vis_controller_points[self.masks_ctrl_pts[0]], axis=0)
             center1 = np.mean(vis_controller_points[self.masks_ctrl_pts[1]], axis=0)
 
@@ -234,46 +234,31 @@ class PhysTwinEnv():
         if self.masks_ctrl_pts is not None:
             for i in range(n_ctrl_parts):
                 if self.masks_ctrl_pts[i].sum() > 0:
-                    # 会断梯度
-                    # self.current_target[self.masks_ctrl_pts[i]] += torch.tensor(
-                    #     target_change[i], dtype=torch.float32, device=cfg.device
-                    # )
-                    # 修改为：
-                    self.current_target[self.masks_ctrl_pts[i]] += action[i]
+                    self.current_target[self.masks_ctrl_pts[i]] += torch.tensor(
+                        target_change[i], dtype=torch.float32, device=cfg.device
+                    )
                     
                     if i == 0:
-                        # self.hand_left_pos += torch.tensor(
-                        #     target_change[i], dtype=torch.float32, device=cfg.device
-                        # )
-                        self.hand_left_pos += target_change[i].detach().clone()
+                        self.hand_left_pos += torch.tensor(
+                            target_change[i], dtype=torch.float32, device=cfg.device
+                        )
                     if i == 1:
-                        # self.hand_right_pos += torch.tensor(
-                        #     target_change[i], dtype=torch.float32, device=cfg.device
-                        # )
-                        self.hand_right_pos += target_change[i].detach().clone()
+                        self.hand_right_pos += torch.tensor(
+                            target_change[i], dtype=torch.float32, device=cfg.device
+                        )
 
         else:
             self.current_target += torch.tensor(
                 target_change, dtype=torch.float32, device=cfg.device
             )
-            # self.hand_left_pos += torch.tensor(
-            #     target_change, dtype=torch.float32, device=cfg.device
-            # )
-            self.hand_left_pos += target_change[i].detach().clone()
+            self.hand_left_pos += torch.tensor(
+                target_change, dtype=torch.float32, device=cfg.device
+            )
 
-    # def get_obs(self):
-    #     ctrl_pts = self.current_target.clone().detach().cpu().numpy()
-    #     state_pts = self.prev_x.detach().cpu().numpy()
-    #     return {"ctrl_pts": ctrl_pts, "state": state_pts}
-    # def get_obs(self):
-    #     ctrl_pts = self.current_target.clone()
-    #     state_pts = self.prev_x.clone()
-    #     return {"ctrl_pts": ctrl_pts, "state": state_pts}
     def get_obs(self):
-        return {
-            "ctrl_pts": self.current_target,
-            "state": self.prev_x
-        }
+        ctrl_pts = self.current_target.clone().detach().cpu().numpy()
+        state_pts = self.prev_x.detach().cpu().numpy()
+        return {"ctrl_pts": ctrl_pts, "state": state_pts}
 
     def set_init_state_from_numpy(self, init_state_path):
         """
