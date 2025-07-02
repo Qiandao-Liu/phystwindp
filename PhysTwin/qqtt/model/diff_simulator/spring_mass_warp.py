@@ -843,7 +843,6 @@ class SpringMassSystemWarp:
         self.wp_spring_indices = wp.from_torch(self.spring_indices)
         self.wp_spring_rest_length = wp.from_torch(self.spring_rest_length)
 
-
     """
     Set Init State from dataset
     """
@@ -940,17 +939,6 @@ class SpringMassSystemWarp:
             outputs=[self.wp_target_control_point],
         )
     
-    """
-    重置模拟器状态（粒子位置和速度），用于 `env.reset()` 或从某一状态回放。
-
-    参数：
-    - wp_x: 初始化粒子位置 wp.array of vec3 
-    - wp_v: 初始化粒子速度
-    - pure_inference: 如果为 True 则直接使用原始张量，否则 clone 一份并设置 requires_grad=False
-
-    说明：
-    - 这会直接写入状态列表 `self.wp_states[0]`，作为 simulation 初始状态
-    """
     def set_init_state(self, wp_x, wp_v, pure_inference=False):
         # Detach and clone and set requires_grad=True
         assert (
