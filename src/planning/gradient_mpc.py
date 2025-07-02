@@ -18,27 +18,32 @@ def simulate_trajectory(env, action_seq, init_state_path, max_delta=0.03):
     Simulate the trajectory in the environment with clamped actions.
     Returns predicted control and GS trajectories.
     """
-    env.set_init_state_from_numpy(init_state_path)
+    # 注释掉这一行，避免每一步都 set init state
+    # env.set_init_state_from_numpy(init_state_path)
 
     pred_ctrl_traj = []
     pred_gs_traj = []
 
     for t in range(len(action_seq)):
         action_step = torch.clamp(action_seq[t], min=-max_delta, max=max_delta)
+
         env.step(env.n_ctrl_parts, action_step)
 
         obs = env.get_obs()
-        ctrl = torch.from_numpy(obs["ctrl_pts"]).float().to("cuda")
-        gs = torch.from_numpy(obs["state"]).float().to("cuda")
+        # ctrl = torch.from_numpy(obs["ctrl_pts"]).float().to("cuda")
+        # gs = torch.from_numpy(obs["state"]).float().to("cuda")
+        ctrl = obs["ctrl_pts"]
+        gs = obs["state"]
 
         pred_ctrl_traj.append(ctrl)
         pred_gs_traj.append(gs)
 
-        # print(f"[Step {t}] ctrl.requires_grad = {ctrl.requires_grad}")
+        # print(f"[Step {t}] action_step.requires_grad = {action_step.requires_grad}")
+        # print(f"[Step {t}] ctrl.requires_grad = {ctrl.requires_grad}, gs.requires_grad = {gs.requires_grad}")
 
     pred_ctrl_traj = torch.stack(pred_ctrl_traj)  # (H, N, 3)
     pred_gs_traj = torch.stack(pred_gs_traj)      # (H, M, 3)
-
+    
     return pred_ctrl_traj, pred_gs_traj
 
 
@@ -82,7 +87,10 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
 
     optimizer = torch.optim.Adam([action_seq], lr=lr)
 
-    for outer in trange(outer_iters):
+    # 只 set_init_state_from_numpy 一次
+    env.set_init_state_from_numpy(init_state_path)
+
+    for outer in range(outer_iters):
         pred_ctrl_traj, pred_gs_traj = simulate_trajectory(env, action_seq, init_state_path=init_state_path)
 
         loss, chamfer_loss, ctrl_loss, smooth_loss = compute_loss(
@@ -96,7 +104,7 @@ def run_gradient_mpc(env, target_gs_pts, target_ctrl_pts, init_state_path, horiz
 
         # Print diagnostics
         grad_norm = action_seq.grad.norm().item() if action_seq.grad is not None else 0.0
-        print(f"[iter {outer}] total={loss.item():.4f} | chamfer={chamfer_loss.item():.4f} | ctrl={ctrl_loss.item():.4f} | smooth={smooth_loss.item():.4f} | grad_norm={grad_norm:.4f}")
+        print(f"[iter {outer}] total loss={loss.detach().item():.4f} | chamfer={chamfer_loss.item():.4f} | ctrl={ctrl_loss.item():.4f} | smooth={smooth_loss.item():.4f} | grad_norm={grad_norm:.4f}")
 
 
 env = PhysTwinEnv(case_name="double_lift_cloth_1")
