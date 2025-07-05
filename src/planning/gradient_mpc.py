@@ -89,6 +89,46 @@ def setup_simulator_state(sim, init_data, target_data):
     print(f"✅ Done. Init ctrl_pts: {ctrl_pts_np.shape}, obj_pts: {wp_x_np.shape}, springs: {spring_indices_np.shape}")
     return ctrl_pts_wp, wp_x, tgt_ctrl_wp, tgt_obj_wp
 
+# @wp.kernel
+# def add_action_kernel(original: wp.array(dtype=wp.vec3f),
+#                       action: wp.array(dtype=wp.vec3f),
+#                       out: wp.array(dtype=wp.vec3f)):
+#     tid = wp.tid()
+#     out[tid] = original[tid] + action[tid]
+@wp.kernel
+def apply_action_to_target_kernel(base: wp.array(dtype=wp.vec3f),
+                                   action: wp.array(dtype=wp.vec3f),
+                                   out: wp.array(dtype=wp.vec3f)):
+    tid = wp.tid()
+    out[tid] = base[tid] + action[tid]
+
+@wp.kernel
+def mse_loss_kernel(pred: wp.array(dtype=wp.vec3f),
+                    target: wp.array(dtype=wp.vec3f),
+                    loss: wp.array(dtype=float)):
+    tid = wp.tid()
+    diff = pred[tid] - target[tid]
+    wp.atomic_add(loss, 0, wp.dot(diff, diff))
+
+def compute_loss_warp(sim, target_obj_wp):
+    """
+    用 Warp Kernel 计算 loss
+    """
+    pred = sim.wp_states[-1].wp_x  # 当前物体顶点
+    target = target_obj_wp         # 目标顶点
+
+    # 初始化 loss 存储器（注意设置 requires_grad=True）
+    loss = wp.zeros(1, dtype=float, device="cuda", requires_grad=True)
+
+    wp.launch(
+        mse_loss_kernel,
+        dim=pred.shape,
+        inputs=[pred, target],
+        outputs=[loss],
+    )
+    
+    return wp.clone(loss, requires_grad=True)  # 返回整个 warp array
+
 def run_gradient_mpc(sim,
                      init_ctrl_wp: wp.array,
                      init_obj_wp: wp.array,
@@ -112,28 +152,45 @@ def run_gradient_mpc(sim,
         sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
 
         # 嵌入 Tape
-        with tape:
+        with tape:  
+            ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
+
             for t in range(horizon):
-                # sim.set_controller_interactive(
-                #     sim.wp_original_control_point,
-                #     sim.wp_original_control_point + action_seq[t]
-                # )
-                # 每步直接更新 target control point 到当前动作值
-                sim.wp_target_control_point = sim.wp_original_control_point + action_seq[t]
+                updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
+                wp.launch(
+                    apply_action_to_target_kernel,
+                    dim=sim.num_control_points,
+                    inputs=[ctrl_pts_wp, action_seq[t]],
+                    outputs=[updated_ctrl],
+                )
+
+                # 更新 simulator 中的控制点
+                sim.wp_target_control_point = updated_ctrl
+                ctrl_pts_wp = updated_ctrl  # 继续累加
 
                 if sim.object_collision_flag:
                     sim.update_collision_graph()
+
+                print(f"[Frame {t}] wp_target_control_point[0] =", wp.to_torch(sim.wp_target_control_point)[0])
+                print(f"[Frame {t}] ctrl_pts_wp[0] = {wp.to_torch(ctrl_pts_wp)[0]}")
+    
                 sim.step()
 
             # 计算 Warp 版的 Chamfer Loss
-            loss = sim.calculate_loss()
+            loss = compute_loss_warp(sim, target_obj_wp)
+            print("LOSS TYPE =", type(loss))
+            print("LOSS (Warp array) =", loss)
+            print("LOSS (Torch tensor) =", wp.to_torch(loss))
+
             final_obj_torch = wp.to_torch(sim.wp_states[-1].wp_x)
             print("[DEBUG] final_obj_wp[0]:", final_obj_torch[0])
             action_seq_torch = wp.to_torch(action_seq)
             print("[DEBUG] action_seq[0][0]:", action_seq_torch[0][0])
+            print("[TRACE] wp_target_control_point[0] =", wp.to_torch(sim.wp_target_control_point)[0])
 
         # 反向传播、拿梯度、更新动作序列
-        tape.backward(loss)      
+        tape.backward(loss)
+        print("[TRACE] grad check:", wp.to_torch(action_seq.grad)[0][0])
 
         # Warp 中拿到 gradients：
         grad = action_seq.grad  # 形状同 action_seq
@@ -149,7 +206,6 @@ def run_gradient_mpc(sim,
             print("→ grad[0][0] =", grad_torch[0][0])
 
     return action_seq
-
 
 if __name__ == "__main__":
     main(init_idx=0, target_idx=0)
