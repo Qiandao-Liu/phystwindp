@@ -10,9 +10,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../PhysTwin")))
 
 from src.env.phystwin_env import PhysTwinEnv
-from src.planning.losses import chamfer
 
-def main(case_name="double_lift_cloth", init_idx=0, target_idx=0):
+def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
     """
     Step 1. Init Env by PhysTwinEnv
     """
@@ -81,7 +80,7 @@ def setup_simulator_state(sim, init_data, target_data):
     spring_indices_np = init_data["spring_indices"]      # (Ns, 2)
     spring_rest_len_np = init_data["spring_rest_len"]    # (Ns,)
 
-    spring_indices = wp.array(spring_indices_np, dtype=wp.int32, device="cuda")
+    spring_indices = wp.array(spring_indices_np, dtype=wp.vec2i, device="cuda")
     rest_lengths   = wp.array(spring_rest_len_np, dtype=float, device="cuda")
 
     sim.wp_springs = spring_indices
@@ -89,21 +88,6 @@ def setup_simulator_state(sim, init_data, target_data):
 
     print(f"✅ Done. Init ctrl_pts: {ctrl_pts_np.shape}, obj_pts: {wp_x_np.shape}, springs: {spring_indices_np.shape}")
     return ctrl_pts_wp, wp_x, tgt_ctrl_wp, tgt_obj_wp
-
-
-def warp_chamfer(a_wp: wp.array, b_wp: wp.array) -> wp.array:
-    """
-    Step 4. Define a Chamfer loss for both ctrl_pts and gs_pts
-    1) Warp -> Torch
-    2) call your existing chamfer_torch
-    3) torch scalar -> Warp scalar
-    """
-    a_t = wp.to_torch(a_wp, requires_grad=True)    # (M,3)
-    b_t = wp.to_torch(b_wp, requires_grad=False)   # (N,3)
-    # chamfer_torch expects batched: (1,M,3),(1,N,3)
-    loss_t = chamfer(a_t.unsqueeze(0), b_t.unsqueeze(0)).mean()
-    return wp.from_torch(loss_t, dtype=float)
-
 
 def run_gradient_mpc(sim,
                      init_ctrl_wp: wp.array,
@@ -116,7 +100,7 @@ def run_gradient_mpc(sim,
     sim: SpringMassSystemWarp 实例
     """
     # 令动作序列也是 Warp 张量（将优化它）
-    action_seq = wp.zeros((horizon, sim.num_control_points, 3), dtype=wp.vec3, requires_grad=True)
+    action_seq = wp.zeros((horizon, sim.num_control_points), dtype=wp.vec3f, requires_grad=True)
     print("✅ action_seq.requires_grad =", action_seq.requires_grad)
 
     # 外层优化循环
@@ -130,42 +114,38 @@ def run_gradient_mpc(sim,
         # 嵌入 Tape
         with tape:
             for t in range(horizon):
-                # 直接把 action[t] 当作 target delta
-                print(f"🔁 [iter {it}] Step {t}: action_seq[{t}][0] =", wp.to_torch(action_seq[t][0]))
+                # sim.set_controller_interactive(
+                #     sim.wp_original_control_point,
+                #     sim.wp_original_control_point + action_seq[t]
+                # )
+                # 每步直接更新 target control point 到当前动作值
+                sim.wp_target_control_point = sim.wp_original_control_point + action_seq[t]
 
-                sim.set_controller_interactive(
-                    sim.wp_original_control_point,
-                    sim.wp_original_control_point + action_seq[t]
-                )
                 if sim.object_collision_flag:
                     sim.update_collision_graph()
                 sim.step()
 
-            # 到这一步，Sim.wp_states[-1].wp_x 就是仿真结束的 object 点
-            final_obj_wp  = sim.wp_states[-1].wp_x
-            final_ctrl_wp = sim.wp_states[-1].wp_control_x
-
             # 计算 Warp 版的 Chamfer Loss
-            loss_obj  = warp_chamfer(final_obj_wp,  target_obj_wp)
-            loss_ctrl = warp_chamfer(final_ctrl_wp, target_ctrl_wp)
-            loss      = loss_obj + loss_ctrl
+            loss = sim.calculate_loss()
+            final_obj_torch = wp.to_torch(sim.wp_states[-1].wp_x)
+            print("[DEBUG] final_obj_wp[0]:", final_obj_torch[0])
+            action_seq_torch = wp.to_torch(action_seq)
+            print("[DEBUG] action_seq[0][0]:", action_seq_torch[0][0])
 
         # 反向传播、拿梯度、更新动作序列
-        tape.backward(loss)
-        grad_torch = wp.to_torch(grad)  # shape: (horizon, Nc, 3)
-        print("✅ grad norm =", grad_torch.norm().item())
-        print("✅ grad[0][0] =", grad_torch[0][0])
+        tape.backward(loss)      
 
         # Warp 中拿到 gradients：
         grad = action_seq.grad  # 形状同 action_seq
+        grad_torch = wp.to_torch(grad)  # shape: (horizon, Nc, 3)
+        print("✅ grad norm =", grad_torch.norm().item())
+        print("✅ grad[0][0] =", grad_torch[0][0])
 
         # 简单梯度下降
         action_seq = action_seq - lr * grad
 
         if it % 10 == 0:
             grad_torch = wp.to_torch(action_seq.grad)
-            print(f"[iter {it:3d}] l_obj={wp.to_torch(loss_obj):.4f} "
-                f"l_ctrl={wp.to_torch(loss_ctrl):.4f} | grad_norm={grad_torch.norm():.6f}")
             print("→ grad[0][0] =", grad_torch[0][0])
 
     return action_seq
