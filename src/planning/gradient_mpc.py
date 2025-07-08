@@ -86,14 +86,32 @@ def setup_simulator_state(sim, init_data, target_data):
     print(f"Done. Init ctrl_pts: {ctrl_pts_np.shape}, obj_pts: {wp_x_np.shape}, springs: {spring_indices_np.shape}")
     return ctrl_pts_wp, wp_x, tgt_ctrl_wp, tgt_obj_wp
 
-def compute_loss_warp(sim, target_obj_wp):
-    """
-    Chamfer loss between final predicted GS points and target GS points
-    """
-    pred = wp.to_torch(sim.wp_states[-1].wp_x)
-    target = wp.to_torch(target_obj_wp)
-    loss = chamfer(pred.unsqueeze(0), target.unsqueeze(0)).mean()
-    return loss
+@wp.kernel
+def mse_loss_kernel(pred: wp.array(dtype=wp.vec3f),
+                    target: wp.array(dtype=wp.vec3f),
+                    loss_out: wp.array(dtype=float)):
+    tid = wp.tid()
+    diff = pred[tid] - target[tid]
+    sq_dist = wp.dot(diff, diff)
+    wp.atomic_add(loss_out, 0, sq_dist)
+
+def compute_loss_warp(sim, target):
+    # MSE
+    pred = sim.wp_states[-1].wp_x
+    assert pred.shape[0] == target.shape[0], f"Shape mismatch: pred {pred.shape}, target {target.shape}"
+
+    num_points = pred.shape[0]
+    loss_out = wp.zeros(1, dtype=float, device="cuda", requires_grad=True)
+
+    wp.launch(
+        kernel=mse_loss_kernel,
+        dim=num_points,
+        inputs=[pred, target],
+        outputs=[loss_out],
+        device="cuda"
+    )
+
+    return loss_out, num_points
 
 def forward(sim, ctrl_pts_wp, target_ctrl_wp, num_step):
     # Set controller
@@ -104,9 +122,6 @@ def forward(sim, ctrl_pts_wp, target_ctrl_wp, num_step):
 
     # final state
     return sim.wp_states[-1].wp_x
-
-
-    print(tape.gradients[loss])
 
 def run_gradient_mpc(sim, 
                      init_ctrl_wp, init_obj_wp, 
@@ -128,16 +143,23 @@ def run_gradient_mpc(sim,
             for _ in range(num_step):
                 sim.step()
 
-            loss = compute_loss_warp(sim, target_obj_wp)
+            loss_out, num_points = compute_loss_warp(sim, target_obj_wp)
+            loss_wp = wp.array([wp.to_torch(loss_out)[0] / num_points], dtype=float, device="cuda", requires_grad=True)
 
         # backward
-        tape.backward(loss)
+        tape.backward(loss_wp)
+
+        grad = tape.gradients[ctrl_pts_wp]
+        if grad is None:
+            print("ctrl_pts_wp ⚠️")
+        else:
+            print("ctrl_pts_wp ✅")
 
         # gradient descent
         grad = tape.gradients[ctrl_pts_wp]
         ctrl_pts_wp -= lr * grad
 
-        print(f"[Iter {t}] Loss: {loss:.4f}")
+        print(f"[Iter {t}] Loss: {loss_wp:.4f}")
 
     return ctrl_pts_wp
 
