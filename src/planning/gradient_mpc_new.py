@@ -78,53 +78,33 @@ def compute_loss_warp(sim, target_obj_wp):
     loss = chamfer(pred.unsqueeze(0), target.unsqueeze(0)).mean()
     return loss
 
-def run_gradient_mpc(sim,
-                     init_ctrl_wp: wp.array,
-                     init_obj_wp: wp.array,
-                     target_ctrl_wp: wp.array,
-                     target_obj_wp: wp.array,
-                     horizon=40, lr=1e-2, outer_iters=200):
-    action_seq = wp.zeros((horizon, sim.num_control_points), dtype=wp.vec3f, requires_grad=True)
+def forward(sim,
+             init_ctrl_wp: wp.array,
+             init_obj_wp: wp.array,
+             target_ctrl_wp: wp.array,
+             target_obj_wp: wp.array,):
+    sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
 
+    ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
+    updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
+
+    # 1 forward step
+
+    sim.wp_target_control_point = updated_ctrl
+    ctrl_pts_wp = updated_ctrl
+
+    sim.step()
+
+def backward():
+
+
+    tape.backward(
+        
+    )
+
+def run_gradient_mpc(horizon=40, lr=1e-2, outer_iters=200):
     for t in range(outer_iters):
-        tape = wp.Tape()
-
-        sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
-
-        with tape:  
-            ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
-
-            for t in range(horizon):
-                updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
-
-                sim.wp_target_control_point = updated_ctrl
-                ctrl_pts_wp = updated_ctrl
-                if sim.object_collision_flag:
-                    sim.update_collision_graph()
-
-                print(f"[Frame {t}] wp_target_control_point[0] =", wp.to_torch(sim.wp_target_control_point)[0])
-                print(f"[Frame {t}] ctrl_pts_wp[0] = {wp.to_torch(ctrl_pts_wp)[0]}")
-    
-                sim.step()
-
-        # Backward
-        tape.backward(
-            
-        )
-        print("[TRACE] grad check:", wp.to_torch(action_seq.grad)[0][0])
-
-        grad = action_seq.grad
-        grad_torch = wp.to_torch(grad)
-        print("grad norm =", grad.norm().item())
-        print("grad =", grad_torch[0][0])
-
-        action_seq = action_seq - lr * grad
-
-        if t % 10 == 0:
-            grad_torch = wp.to_torch(action_seq.grad)
-            print("→ grad[0][0] =", grad_torch[0][0])
-
-    return action_seq
+        pass
 
 if __name__ == "__main__":
     main(init_idx=0, target_idx=0)
