@@ -1017,25 +1017,22 @@ class SpringMassSystemWarp:
         SpringMassSystemWarp/step()
         """
         for i in range(self.num_substeps):
-            # 清空当前子步的所有外力
             self.wp_states[i].clear_forces()
 
-            # 设置控制点位置：从 original -> target 做线性插值
             if not self.controller_points is None:
                 # Set the control point
                 wp.launch(
                     set_control_points,
                     dim=self.num_control_points,
                     inputs=[
-                        self.num_substeps,                   # 总子步数量
-                        self.wp_original_control_point,      # 起始控制点
-                        self.wp_target_control_point,        # 目标控制点
-                        i,                                   # 当前子步编号
+                        self.num_substeps,
+                        self.wp_original_control_point,
+                        self.wp_target_control_point,
+                        i,
                     ],
-                    outputs=[self.wp_states[i].wp_control_x],  # 输出的插值控制点位置
+                    outputs=[self.wp_states[i].wp_control_x],
                 )
 
-            # 计算所有 spring 的弹力（包括控制点弹簧和物体内部弹簧）
             wp.launch(
                 kernel=eval_springs,
                 dim=self.n_springs,
@@ -1055,7 +1052,6 @@ class SpringMassSystemWarp:
                 outputs=[self.wp_states[i].wp_vertice_forces],
             )
 
-            # 判断是否启用物体碰撞：确定速度更新的输出位置
             if self.object_collision_flag:
                 output_v = self.wp_states[i].wp_v_before_collision
             else:

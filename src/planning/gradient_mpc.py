@@ -30,17 +30,6 @@ def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
     init_ctrl_wp, init_obj_wp, target_ctrl_wp, target_obj_wp = setup_simulator_state(sim, init_data, target_data)
 
     """
-    Step 2. Get all variables from SpringMassSystemWarp (This SpringMassSystemWarp should be the one we just activated by PhysTwin, not a new Dynamics Model)
-    """
-    print("=== SpringMassSystemWarp attributes ===")
-    print("num_control_points:", sim.num_control_points)
-    print("num_object_points: ", sim.num_object_points)
-    print("wp_original_control_point:", sim.wp_original_control_point.shape)
-    print("wp_target_control_point:  ", sim.wp_target_control_point.shape)
-    print("wp_states[0].wp_x:", sim.wp_states[0].wp_x.shape)
-    print("wp_states[0].wp_v:", sim.wp_states[0].wp_v.shape)
-
-    """
     Run MPC
     """
     best_actions_wp = run_gradient_mpc(sim, init_ctrl_wp, init_obj_wp, target_ctrl_wp, target_obj_wp)
@@ -52,7 +41,7 @@ def setup_simulator_state(sim, init_data, target_data):
     """
     用 Warp 操作将 init_data + target_data 填入 sim (SpringMassSystemWarp)
     """
-    print("🔧 [setup_simulator_state] Initializing simulator with pure Warp...")
+    print("[setup_simulator_state] Initializing simulator")
 
     # (1) Init State & Speed
     wp_x_np = init_data["wp_x"]               # (P,3)
@@ -67,7 +56,7 @@ def setup_simulator_state(sim, init_data, target_data):
     ctrl_pts_np = init_data["ctrl_pts"]       # (Nc, 3)
     ctrl_pts_wp = wp.array(ctrl_pts_np, dtype=wp.vec3f, device="cuda", requires_grad=True)
     sim.wp_original_control_point = wp.clone(ctrl_pts_wp, requires_grad=True)
-    sim.wp_target_control_point   = wp.clone(ctrl_pts_wp, requires_grad=True)
+    # sim.wp_target_control_point   = wp.clone(ctrl_pts_wp, requires_grad=True)
 
     # (3) Target obj_pts & Ctrl_pts
     tgt_ctrl_wp = wp.array(target_data["ctrl_pts"], dtype=wp.vec3f, device="cuda")
@@ -92,12 +81,12 @@ def setup_simulator_state(sim, init_data, target_data):
 #                       out: wp.array(dtype=wp.vec3f)):
 #     tid = wp.tid()
 #     out[tid] = original[tid] + action[tid]
-# @wp.kernel
-# def apply_action_to_target_kernel(base: wp.array(dtype=wp.vec3f),
-#                                    action: wp.array(dtype=wp.vec3f),
-#                                    out: wp.array(dtype=wp.vec3f)):
-#     tid = wp.tid()
-#     out[tid] = base[tid] + action[tid]
+@wp.kernel
+def apply_action_to_target_kernel(base: wp.array(dtype=wp.vec3f),
+                                   action: wp.array(dtype=wp.vec3f),
+                                   out: wp.array(dtype=wp.vec3f)):
+    tid = wp.tid()
+    out[tid] = base[tid] + action[tid]
 @wp.kernel
 def mse_loss_kernel(pred: wp.array(dtype=wp.vec3f),
                     target: wp.array(dtype=wp.vec3f),
@@ -135,9 +124,8 @@ def run_gradient_mpc(sim,
     sim: SpringMassSystemWarp 实例
     """
     action_seq = wp.zeros((horizon, sim.num_control_points), dtype=wp.vec3f, requires_grad=True)
-    print("action_seq.requires_grad =", action_seq.requires_grad)
 
-    for it in range(outer_iters):
+    for t in range(outer_iters):
         tape = wp.Tape()
 
         sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
@@ -187,7 +175,7 @@ def run_gradient_mpc(sim,
 
         action_seq = action_seq - lr * grad
 
-        if it % 10 == 0:
+        if t % 10 == 0:
             grad_torch = wp.to_torch(action_seq.grad)
             print("→ grad[0][0] =", grad_torch[0][0])
 
