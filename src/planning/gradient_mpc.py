@@ -144,22 +144,22 @@ def run_gradient_mpc(sim,
                 sim.step()
 
             loss_out, num_points = compute_loss_warp(sim, target_obj_wp)
-            loss_wp = wp.array([wp.to_torch(loss_out)[0] / num_points], dtype=float, device="cuda", requires_grad=True)
+            loss = wp.array([wp.to_torch(loss_out)[0] / num_points], dtype=float, device="cuda", requires_grad=True)
 
         # backward
-        tape.backward(loss_wp)
+        tape.backward(loss)
 
         grad = tape.gradients[ctrl_pts_wp]
         if grad is None:
-            print("ctrl_pts_wp ⚠️")
+            print("GradNone")
         else:
-            print("ctrl_pts_wp ✅")
+            print("Grad")
 
         # gradient descent
         grad = tape.gradients[ctrl_pts_wp]
         ctrl_pts_wp -= lr * grad
 
-        print(f"[Iter {t}] Loss: {loss_wp:.4f}")
+        print(f"[Iter {t}] Loss: {loss:.4f}")
 
     return ctrl_pts_wp
 
