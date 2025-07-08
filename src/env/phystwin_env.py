@@ -29,11 +29,7 @@ from sklearn.cluster import KMeans
 
 class PhysTwinEnv():
     """
-    Loading training data from: ./data/different_types/double_lift_cloth_1/final_data.pkl
-    Keys in final_data.pkl: 
-    dict_keys(['controller_mask', 'controller_points', 'object_points', 
-    'object_colors', 'object_visibilities', 'object_motions_valid', 'surface_points', 'interior_points'])
-    Back to root: ./workspace/PhysTwin/
+    Gym-style version of the PhysTwin Env
     """ 
     def __init__(self, 
                  case_name="double_lift_cloth_1",

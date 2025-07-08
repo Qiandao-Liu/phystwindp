@@ -8,11 +8,11 @@ import sys, os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../PhysTwin")))
-from qqtt.model.diff_simulator import (
-    SpringMassSystemWarp,
-)
+from src.env.phystwin_env import PhysTwinEnv
+from src.planning.losses import chamfer
 
 def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
+    # Init an Environment by PhysTwinEnv
     init_path = f"PhysTwin/mpc_init/init_{init_idx:03d}.pkl"
     target_path = f"PhysTwin/mpc_target_U/target_{target_idx:03d}.pkl"
 
@@ -20,3 +20,111 @@ def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
         init_data = pickle.load(f)
     with open(target_path, "rb") as f:
         target_data = pickle.load(f)
+
+    env = PhysTwinEnv(case_name)
+    sim = env.simulator  # sim = SpringMassSystemWarp
+
+    # Set init simulator state
+    init_ctrl_wp, init_obj_wp, target_ctrl_wp, target_obj_wp = setup_simulator_state(sim, init_data, target_data)
+
+    # Run MPC
+    best_actions_wp = run_gradient_mpc(sim, init_ctrl_wp, init_obj_wp, target_ctrl_wp, target_obj_wp)
+    best_actions_np = wp.to_torch(best_actions_wp).cpu().numpy()
+    print("Optimized action sequence shape:", best_actions_np.shape)
+
+
+def setup_simulator_state(sim, init_data, target_data):
+    """
+    Fill init_data and target_data into simulator SpringMassSystemWarp
+    """
+    # (1) Set init State & Speed
+    wp_x_np = init_data["wp_x"]
+    wp_v_np = np.zeros_like(wp_x_np)  # speed=0
+
+    wp_x = wp.array(wp_x_np, dtype=wp.vec3f, device="cuda", requires_grad=True)
+    wp_v = wp.array(wp_v_np, dtype=wp.vec3f, device="cuda", requires_grad=True)
+
+    sim.set_init_state(wp_x, wp_v, pure_inference=True)
+
+    # (2) Set ctrl_pts
+    ctrl_pts_np = init_data["ctrl_pts"]
+    ctrl_pts_wp = wp.array(ctrl_pts_np, dtype=wp.vec3f, device="cuda", requires_grad=True)
+    sim.wp_original_control_point = wp.clone(ctrl_pts_wp, requires_grad=True)
+    sim.wp_target_control_point   = wp.clone(ctrl_pts_wp, requires_grad=True)
+
+    # (3) Set target obj_pts & Ctrl_pts
+    tgt_ctrl_wp = wp.array(target_data["ctrl_pts"], dtype=wp.vec3f, device="cuda")
+    tgt_obj_wp  = wp.array(target_data["object_points"], dtype=wp.vec3f, device="cuda")
+
+    # (4) Set Spring-Mass
+    spring_indices_np = init_data["spring_indices"]
+    spring_rest_len_np = init_data["spring_rest_len"]
+
+    spring_indices = wp.array(spring_indices_np, dtype=wp.vec2i, device="cuda")
+    rest_lengths   = wp.array(spring_rest_len_np, dtype=float, device="cuda")
+
+    sim.wp_springs = spring_indices
+    sim.wp_rest_lengths = rest_lengths
+
+    print(f"Done. Init ctrl_pts: {ctrl_pts_np.shape}, obj_pts: {wp_x_np.shape}, springs: {spring_indices_np.shape}")
+    return ctrl_pts_wp, wp_x, tgt_ctrl_wp, tgt_obj_wp
+
+def compute_loss_warp(sim, target_obj_wp):
+    """
+    Chamfer loss between final predicted GS points and target GS points
+    """
+    pred = wp.to_torch(sim.wp_states[-1].wp_x)
+    target = wp.to_torch(target_obj_wp)
+    loss = chamfer(pred.unsqueeze(0), target.unsqueeze(0)).mean()
+    return loss
+
+def run_gradient_mpc(sim,
+                     init_ctrl_wp: wp.array,
+                     init_obj_wp: wp.array,
+                     target_ctrl_wp: wp.array,
+                     target_obj_wp: wp.array,
+                     horizon=40, lr=1e-2, outer_iters=200):
+    action_seq = wp.zeros((horizon, sim.num_control_points), dtype=wp.vec3f, requires_grad=True)
+
+    for t in range(outer_iters):
+        tape = wp.Tape()
+
+        sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
+
+        with tape:  
+            ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
+
+            for t in range(horizon):
+                updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
+
+                sim.wp_target_control_point = updated_ctrl
+                ctrl_pts_wp = updated_ctrl
+                if sim.object_collision_flag:
+                    sim.update_collision_graph()
+
+                print(f"[Frame {t}] wp_target_control_point[0] =", wp.to_torch(sim.wp_target_control_point)[0])
+                print(f"[Frame {t}] ctrl_pts_wp[0] = {wp.to_torch(ctrl_pts_wp)[0]}")
+    
+                sim.step()
+
+        # Backward
+        tape.backward(
+            
+        )
+        print("[TRACE] grad check:", wp.to_torch(action_seq.grad)[0][0])
+
+        grad = action_seq.grad
+        grad_torch = wp.to_torch(grad)
+        print("grad norm =", grad.norm().item())
+        print("grad =", grad_torch[0][0])
+
+        action_seq = action_seq - lr * grad
+
+        if t % 10 == 0:
+            grad_torch = wp.to_torch(action_seq.grad)
+            print("→ grad[0][0] =", grad_torch[0][0])
+
+    return action_seq
+
+if __name__ == "__main__":
+    main(init_idx=0, target_idx=0)
