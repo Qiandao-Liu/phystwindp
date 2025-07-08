@@ -13,6 +13,26 @@ from src.planning.losses import chamfer
 
 def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
     # Init an Environment by PhysTwinEnv
+    env = PhysTwinEnv(case_name)
+    sim = env.simulator  # sim = SpringMassSystemWarp
+
+    """
+    Init_000.pkl:
+    {
+    "ctrl_pts": (N, 3),
+    "gs_pts": (N, 3),
+    "wp_x": (N, 3),
+    "spring_indices": (N, 2),
+    "spring_rest_len": (N,)
+    }
+
+    Target_000.pkl:
+    {
+    "ctrl_pts": (N, 3),
+    "gs_pts": (N, 3),
+    "object_points": (N, 3)
+    }
+    """
     init_path = f"PhysTwin/mpc_init/init_{init_idx:03d}.pkl"
     target_path = f"PhysTwin/mpc_target_U/target_{target_idx:03d}.pkl"
 
@@ -20,9 +40,6 @@ def main(case_name="double_lift_cloth_1", init_idx=0, target_idx=0):
         init_data = pickle.load(f)
     with open(target_path, "rb") as f:
         target_data = pickle.load(f)
-
-    env = PhysTwinEnv(case_name)
-    sim = env.simulator  # sim = SpringMassSystemWarp
 
     # Set init simulator state
     init_ctrl_wp, init_obj_wp, target_ctrl_wp, target_obj_wp = setup_simulator_state(sim, init_data, target_data)
@@ -78,34 +95,52 @@ def compute_loss_warp(sim, target_obj_wp):
     loss = chamfer(pred.unsqueeze(0), target.unsqueeze(0)).mean()
     return loss
 
-def forward(sim,
-             init_ctrl_wp: wp.array,
-             init_obj_wp: wp.array,
-             target_ctrl_wp: wp.array,
-             target_obj_wp: wp.array,):
-    sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
+def forward(sim, ctrl_pts_wp, target_ctrl_wp, num_step):
+    # Set controller
+    sim.wp_target_control_point = ctrl_pts_wp
 
-    ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
-    updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
+    for _ in range(num_step):
+        sim.step()
 
-    # one forward step
-
-    sim.wp_target_control_point = updated_ctrl
-    ctrl_pts_wp = updated_ctrl
-
-    sim.step()
-
-def backward():
-    tape.backward(
-        
-    )
+    # final state
+    return sim.wp_states[-1].wp_x
 
 
     print(tape.gradients[loss])
 
-def run_gradient_mpc(horizon=40, lr=1e-2, outer_iters=200):
-    for t in range(outer_iters):
-        pass
+def run_gradient_mpc(sim, 
+                     init_ctrl_wp, init_obj_wp, 
+                     target_ctrl_wp, target_obj_wp,
+                     num_step=40, 
+                     lr=1e-2, 
+                     iters=200):
+    ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True)
+
+    for t in trange(iters):
+        with tape:
+            # Set init state to new state
+            sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
+
+            # Set controller
+            sim.wp_target_control_point = ctrl_pts_wp
+
+            # rollout
+            for _ in range(num_step):
+                sim.step()
+
+            loss = compute_loss_warp(sim, target_obj_wp)
+
+        # backward
+        tape.backward(loss)
+
+        # gradient descent
+        grad = tape.gradients[ctrl_pts_wp]
+        ctrl_pts_wp -= lr * grad
+
+        print(f"[Iter {t}] Loss: {loss:.4f}")
+
+    return ctrl_pts_wp
+
 
 if __name__ == "__main__":
     tape = wp.Tape()
