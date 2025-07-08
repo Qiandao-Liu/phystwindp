@@ -88,7 +88,7 @@ def forward(sim,
     ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True) 
     updated_ctrl = wp.zeros_like(ctrl_pts_wp, requires_grad=True)
 
-    # 1 forward step
+    # one forward step
 
     sim.wp_target_control_point = updated_ctrl
     ctrl_pts_wp = updated_ctrl
@@ -96,15 +96,17 @@ def forward(sim,
     sim.step()
 
 def backward():
-
-
     tape.backward(
         
     )
+
+
+    print(tape.gradients[loss])
 
 def run_gradient_mpc(horizon=40, lr=1e-2, outer_iters=200):
     for t in range(outer_iters):
         pass
 
 if __name__ == "__main__":
+    tape = wp.Tape()
     main(init_idx=0, target_idx=0)
