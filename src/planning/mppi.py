@@ -93,7 +93,7 @@ class MPPI:
                     f"chamfer_{outer_iter+1}": chamfer_loss.item(),
                     f"ctrl_mse_{outer_iter+1}": ctrl_loss.item(),
                 })
-                print(f"💾 Saved checkpoint traj at outer_iter={outer_iter+1} to {save_path}")
+                print(f"Saved checkpoint traj at outer_iter={outer_iter+1} to {save_path}")
 
         return self.u
     

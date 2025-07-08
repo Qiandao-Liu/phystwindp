@@ -52,12 +52,10 @@ def run_mpc(init_idx=0, target_idx=0):
 
     # ===== 1. Load full init state from .pkl =====
     init_path = f"PhysTwin/mpc_init/init_{init_idx:03d}.pkl"
-    print(f"🔄 Loading init state from {init_path}")
     env.set_init_state_from_numpy(init_path)
 
     # ===== 2. Load target state (ctrl_pts + gs_pts only) =====
     target_path = f"PhysTwin/mpc_target_U/target_{target_idx:03d}.pkl"
-    print(f"🎯 Loading target state from {target_path}")
     with open(target_path, "rb") as f:
         target_data = pickle.load(f)
     target_ctrl = torch.tensor(target_data["ctrl_pts"], dtype=torch.float32).cuda()
@@ -81,7 +79,7 @@ def run_mpc(init_idx=0, target_idx=0):
     final_gs = torch.tensor(gs_traj[-1], dtype=torch.float32).cuda()
     chamfer_loss = chamfer(final_gs[None], target_gs[None])[0]
     ctrl_loss = F.mse_loss(final_ctrl, target_ctrl)
-    print(f"✅ Final Loss: Chamfer={chamfer_loss.item():.6f}, Ctrl MSE={ctrl_loss.item():.6f}")
+    print(f"Final Loss: Chamfer={chamfer_loss.item():.6f}, Ctrl MSE={ctrl_loss.item():.6f}")
     wandb.log({
         "final_chamfer_loss": chamfer_loss.item(),
         "final_ctrl_mse": ctrl_loss.item()
@@ -99,7 +97,7 @@ def run_mpc(init_idx=0, target_idx=0):
             "target_gs": target_gs.detach().cpu().numpy(),
             "optimized_actions": optimized_actions.detach().cpu().numpy(),
         }, f)
-    print(f"💾 Saved trajectory to {save_path}")
+    print(f"Saved trajectory to {save_path}")
     wandb.finish() 
 
 

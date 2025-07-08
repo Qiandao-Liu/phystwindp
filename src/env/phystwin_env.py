@@ -267,7 +267,7 @@ class PhysTwinEnv():
         - spring_indices: (Q, 2)
         - spring_rest_len: (Q,)
         """
-        print(f"🔄 [set_init_state_from_numpy] Loading: {init_state_path}")
+        print(f"[set_init_state_from_numpy] Loading: {init_state_path}")
         with open(init_state_path, "rb") as f:
             data = pickle.load(f)
 
@@ -303,7 +303,7 @@ class PhysTwinEnv():
         else:
             self.hand_left_pos = self.trainer._find_closest_point(ctrl_pts.to("cuda"))
 
-        print(f"✅ [set_init_state_from_numpy] Done: ctrl_pts={ctrl_pts.shape}, wp_x={wp_x.shape}, springs={spring_indices.shape}")
+        print(f"[set_init_state_from_numpy] Done: ctrl_pts={ctrl_pts.shape}, wp_x={wp_x.shape}, springs={spring_indices.shape}")
 
     def reset_clusters(self, vis_controller_points, n_ctrl_parts=None):
         """
