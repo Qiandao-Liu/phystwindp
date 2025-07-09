@@ -123,6 +123,12 @@ def forward(sim, ctrl_pts_wp, target_ctrl_wp, num_step):
     # final state
     return sim.wp_states[-1].wp_x
 
+@wp.kernel
+def normalize_loss_kernel(loss_in: wp.array(dtype=float),
+                          num_pts: int,
+                          loss_out: wp.array(dtype=float)):
+    loss_out[0] = loss_in[0] / float(num_pts)
+
 def run_gradient_mpc(sim, 
                      init_ctrl_wp, init_obj_wp, 
                      target_ctrl_wp, target_obj_wp,
@@ -132,6 +138,7 @@ def run_gradient_mpc(sim,
     ctrl_pts_wp = wp.clone(init_ctrl_wp, requires_grad=True)
 
     for t in trange(iters):
+        loss_scalar = wp.zeros(1, dtype=float, device="cuda", requires_grad=True)
         with tape:
             # Set init state to new state
             sim.set_init_state(init_obj_wp, wp.zeros_like(init_obj_wp))
@@ -144,22 +151,28 @@ def run_gradient_mpc(sim,
                 sim.step()
 
             loss_out, num_points = compute_loss_warp(sim, target_obj_wp)
-            loss = wp.array([wp.to_torch(loss_out)[0] / num_points], dtype=float, device="cuda", requires_grad=True)
+
+            # Normalize to scaler loss
+            wp.launch(
+                kernel=normalize_loss_kernel,
+                dim=1,
+                inputs=[loss_out, num_points],
+                outputs=[loss_scalar],
+                device="cuda"
+            )
 
         # backward
-        tape.backward(loss)
-
+        tape.backward(loss_scalar)
+        
         grad = tape.gradients[ctrl_pts_wp]
         if grad is None:
-            print("GradNone")
+            print("No Grad")
         else:
-            print("Grad")
-
-        # gradient descent
-        grad = tape.gradients[ctrl_pts_wp]
-        ctrl_pts_wp -= lr * grad
-
-        print(f"[Iter {t}] Loss: {loss:.4f}")
+            print(f"Grad:{grad}")
+            ctrl_pts_wp -= lr * grad
+        
+        loss_val = wp.to_torch(loss_scalar)[0].item()
+        print(f"[Iter {t}] Loss: {loss_val:.6f}")
 
     return ctrl_pts_wp
 
