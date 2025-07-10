@@ -21,7 +21,6 @@ import trimesh
 import matplotlib.pyplot as plt
 import glob
 
-
 from gaussian_splatting.scene.gaussian_model import GaussianModel
 from gaussian_splatting.scene.cameras import Camera
 from gaussian_splatting.gaussian_renderer import render as render_gaussian

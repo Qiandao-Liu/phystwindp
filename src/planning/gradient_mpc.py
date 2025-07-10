@@ -1,4 +1,4 @@
-# workspace/src/planning/gradient_mpc_new.py
+# workspace/src/planning/gradient_mpc.py
 import torch
 import warp as wp
 from tqdm import trange
